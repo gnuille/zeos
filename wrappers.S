@@ -59,9 +59,13 @@
       popl %gs
 
 ENTRY(write)
-      movl -8(%ebp), %ebx
-      movl -12(%ebp), %ecx
-      movl -16(%ebp), %edx
+      push %ebp
+      movl %esp, %ebp
+      movl 8(%ebp), %ebx
+      movl 12(%ebp), %ecx
+      movl 16(%ebp), %edx
       movl $4, %eax
       int $0x80
+      pop %ebp
+  
       ret

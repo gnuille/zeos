@@ -54,8 +54,8 @@ int sys_write(int fd, char* buffer, int size){
   if(check_fd(fd, ESCRIPTURA) < 0) return -1;
   if(buffer == NULL) return -2;
   if(size < 0) return -3;
-  //char* dest;
-  //if(copy_from_user(buffer,dest ,size) < 0) return -4;
+  char dest[size];
+  if(copy_from_user(buffer,dest ,size) < 0) return -4;
 
   return sys_write_console(buffer, size);
 }
