@@ -5,7 +5,6 @@
 #include <asm.h>
 #include <segment.h>
 
-
 /**************************************************/
 /**** Save & Restore ******************************/
 /**                                              **/
@@ -62,15 +61,67 @@
       popl %ds; \
       popl %es; \
       popl %fs; \
-      popl %gs 
+      popl %gs
 
 #define EOI \
       movb $0x20, %al; \
       outb %al, $0x20;
 
+ENTRY(setMsr)
+      movl $0x174, %ecx;
+      movl $__KERNEL_CS, %eax;
+      movl $0, %edx;
+      wrmsr;
+      movl 0x175, %ecx;
+      movl $KERNEL_TSS, %eax
+      movl $0, %edx;
+      wrmsr;
+      movl 0x176, %ecx;
+      leal syscall_handler_sysenter, %eax;
+      movl $0, %edx;
+      wrmsr;
+      ret
 ENTRY(keyboard_handler)
       SAVE_ALL;
       EOI;
       call keyboard_routine;
       RESTORE_ALL;
-      iret;	
+      iret;
+
+ENTRY(system_call_handler)
+      SAVE_ALL;
+      cmpl $0, %eax;
+      jl error;
+      cmpl $MAX_SYSCALL, %eax;
+      jg error;
+      call *sys_call_table(,%eax,4);
+      jmp fin;
+error:
+      movl $-38, %eax;
+
+fin:  movl %eax, 18(%esp);
+      RESTORE_ALL;
+      iret;
+
+ENTRY(syscall_handler_sysenter)
+      push $__USER_DS;
+      push %ebp;
+      pushfl
+      push $__USER_CS
+      push 4(%ebp)
+      SAVE_ALL
+      cmpl $0, %eax
+      jl sysenter_error
+      cmpl $MAX_SYSCALL, %eax
+      jg sysenter_error
+      call *sys_call_table(,%eax,0x04)
+      jmp sysenter_fin
+  sysenter_error:
+      movl $-38, %eax
+  sysenter_fin:
+      movl %eax, 0x18(%esp)
+      RESTORE_ALL
+      movl (%esp), %edx
+      movl 12(%esp), %ecx
+      sti
+      sysexit

@@ -27,11 +27,10 @@ USRLDFLAGS = -T user.lds
 LINKFLAGS = -g
 
 SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o utils.o hardware.o list.o
-
 LIBZEOS = -L . -l zeos
 
 #add to USROBJ the object files required to complete the user program
-USROBJ = libc.o # libjp.a
+USROBJ = libc.o wrappers.o# libjp.a
 
 all:zeos.bin
 
@@ -55,6 +54,9 @@ bootsect.s: bootsect.S Makefile
 entry.s: entry.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
+wrappers.s: wrappers.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
+	$(CPP) $(ASMFLAGS) -o $@ $<
+
 sys_call_table.s: sys_call_table.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
@@ -75,18 +77,18 @@ sys.o:sys.c $(INCLUDEDIR)/devices.h
 utils.o:utils.c $(INCLUDEDIR)/utils.h
 
 
-system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h 
+system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h
 
 
 system: system.o system.lds $(SYSOBJ)
-	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS) 
+	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS)
 
-user: user.o user.lds $(USROBJ) 
+user: user.o user.lds $(USROBJ)
 	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $< $(USROBJ)
 
 
 clean:
-	rm -f *.o *.s bochsout.txt parport.out system.out system bootsect zeos.bin user user.out *~ build 
+	rm -f *.o *.s bochsout.txt parport.out system.out system bootsect zeos.bin user user.out *~ build
 
 disk: zeos.bin
 	dd if=zeos.bin of=/dev/fd0

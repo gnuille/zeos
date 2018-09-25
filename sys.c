@@ -38,10 +38,24 @@ int sys_fork()
   int PID=-1;
 
   // creates the child process
-  
+
   return PID;
 }
 
 void sys_exit()
-{  
+{
+}
+
+//-1 invalid fd
+//-2 invalid addr
+//-3 invalid size
+//-4 error copy from user
+int sys_write(int fd, char* buffer, int size){
+  if(check_fd(fd, ESCRIPTURA) < 0) return -1;
+  if(buffer == NULL) return -2;
+  if(size < 0) return -3;
+  //char* dest;
+  //if(copy_from_user(buffer,dest ,size) < 0) return -4;
+
+  return sys_write_console(buffer, size);
 }
