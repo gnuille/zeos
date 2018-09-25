@@ -15,11 +15,11 @@ Register    idtR;
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
-  '7','8','9','0','\'','ก','\0','\0',
+  '7','8','9','0','\'','ยก','\0','\0',
   'q','w','e','r','t','y','u','i',
   'o','p','`','+','\0','\0','a','s',
-  'd','f','g','h','j','k','l','๑',
-  '\0','บ','\0','็','z','x','c','v',
+  'd','f','g','h','j','k','l','รฑ',
+  '\0','ยบ','\0','รง','z','x','c','v',
   'b','n','m',',','.','-','\0','*',
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0','\0','\0','\0','\0','\0','7',
@@ -80,22 +80,26 @@ void setIdt()
   /* Program interrups/exception service routines */
   idtR.base  = (DWord)idt;
   idtR.limit = IDT_ENTRIES * sizeof(Gate) - 1;
-  
+
   set_handlers();
-  
+
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
   setInterruptHandler(33, keyboard_handler, 0);
-	
- 
+
+
   set_idt_reg(&idtR);
 }
 
 void keyboard_routine()
 {
   unsigned char llegit = inb(0x60);
-  if (!(llegit & 0x80)) printc_xy(0,0,char_map[llegit & 0x7F]);
-  return 0;
-}
-  
-   
+  if (!(llegit & 0x80))
+  {
+    if((llegit & 0x7F) < sizeof(char_map)/sizeof(char) && char_map[llegit & 0x7F] != '\0'){
+      printc_xy(0,0,char_map[llegit & 0x7F]);
+    }else{
+      printc_xy(0,0,'C');
+    }
+  }
 
+}
