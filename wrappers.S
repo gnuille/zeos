@@ -65,6 +65,13 @@ ENTRY(write)
       movl 12(%ebp), %ecx
       movl 16(%ebp), %edx
       movl $4, %eax
-      int $0x80
+      int $0x80 /*sysenter*/
+      pop %ebp
+      ret
+ENTRY(gettime)
+      push %ebp
+      movl %esp, %ebp
+      movl $10, %eax
+      int $0x80 /*sysenter*/
       pop %ebp
       ret

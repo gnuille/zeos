@@ -1,5 +1,5 @@
 /*
- * system.c - 
+ * system.c -
  */
 
 #include <segment.h>
@@ -36,7 +36,7 @@ unsigned int *p_rdtr = (unsigned int *) KERNEL_START+2;
  */
 
 /*
- * This function MUST be 'inline' because it modifies the %esp 
+ * This function MUST be 'inline' because it modifies the %esp
  */
 inline void set_seg_regs(Word data_sel, Word stack_sel, DWord esp)
 {
@@ -98,7 +98,7 @@ int __attribute__((__section__(".text.main")))
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, usr_main, *p_usr_size);
 
-
+  zeos_ticks = 0;
   printk("Entering user mode...");
 
   enable_int();
@@ -111,5 +111,3 @@ int __attribute__((__section__(".text.main")))
   /* The execution never arrives to this point */
   return 0;
 }
-
-

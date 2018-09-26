@@ -59,3 +59,6 @@ int sys_write(int fd, char* buffer, int size){
 
   return sys_write_console(buffer, size);
 }
+int sys_gettime(){
+  return zeos_ticks;
+}

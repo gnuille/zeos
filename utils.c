@@ -2,7 +2,7 @@
 #include <types.h>
 
 #include <mm_address.h>
-
+int zeos_ticks;
 void copy_data(void *start, void *dest, int size)
 {
   DWord *p = start, *q = dest;
