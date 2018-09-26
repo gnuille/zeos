@@ -67,19 +67,14 @@
       movb $0x20, %al; \
       outb %al, $0x20;
 
-ENTRY(setMsr)
-      movl $0x174, %ecx;
-      movl $__KERNEL_CS, %eax;
-      movl $0, %edx;
-      wrmsr;
-      movl 0x175, %ecx;
-      movl $KERNEL_TSS, %eax
-      movl $0, %edx;
-      wrmsr;
-      movl 0x176, %ecx;
-      leal syscall_handler_sysenter, %eax;
-      movl $0, %edx;
-      wrmsr;
+ENTRY(writeMsr)
+      push %ebp
+      movl %esp, %ebp
+      movl 8(%ebp), %ecx
+      movl 12(%ebp), %ecx
+      movl 16(%ebp), %edx
+      wrmsr
+      pop %ebp
       ret
 ENTRY(keyboard_handler)
       SAVE_ALL;
@@ -125,3 +120,10 @@ ENTRY(syscall_handler_sysenter)
       movl 12(%esp), %ecx
       sti
       sysexit
+
+ENTRY(clock_handler)
+      SAVE_ALL;
+      EOI;
+      call clock_routine;
+      RESTORE_ALL;
+      iret;

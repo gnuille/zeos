@@ -74,9 +74,10 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
 }
 
 void keyboard_handler();
+void clock_handler();
 void system_call_handler();
-void setMsr();
-
+void writeMsr(int msr, long data);
+void syscall_handler_sysenter();
 void setIdt()
 {
   /* Program interrups/exception service routines */
@@ -86,8 +87,9 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
-  setMsr();
+  //writeMsr(0x174, 0x0 & ($__KERNEL_CS) & ($KERNEL_TSS<<8) & (syscall_handler_sysenter)<<16);
   setInterruptHandler(33, keyboard_handler, 0);
+  setInterruptHandler(32, clock_handler,    0);
   setTrapHandler(0x80, system_call_handler, 3);
 
   set_idt_reg(&idtR);
@@ -105,4 +107,8 @@ void keyboard_routine()
     }
   }
 
+}
+
+void clock_routine(){
+  zeos_show_clock();
 }
