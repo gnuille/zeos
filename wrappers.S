@@ -58,6 +58,16 @@
       popl %fs; \
       popl %gs
 
+#define SYSCALL(syscalln) \
+      leal return4, %eax; \
+      push %eax; \     
+      movl $syscalln, %eax; \
+      push %ebp; \
+      movl %esp, %ebp; \
+      sysenter; \
+      return syscalln: pop %ebp; \ 
+      addl $4, %esp; \
+
 ENTRY(write)
       push %ebp
       movl %esp, %ebp
@@ -65,18 +75,7 @@ ENTRY(write)
       movl 8(%ebp), %ebx
       movl 12(%ebp), %ecx
       movl 16(%ebp), %edx
-#retur adress load
-      leal return4, %eax
-#fake dynamic link
-      push %eax     
-      movl $4, %eax
-      push %ebp
-      movl %esp, %ebp
-      sysenter
-return4:
-#undo fake dynamic link
-      pop %ebp
-      addl $4, %esp
+      SYSCALL(4);
 #check for errors
       cmpl $0, %eax
       jge fin4
@@ -94,15 +93,7 @@ ENTRY(gettime)
       push %ebp
       push %ebx
       movl %esp, %ebp
-      leal return10, %eax
-      push %eax
-      movl $10, %eax
-      push %ebp
-      movl %esp, %ebp
-      sysenter
-return10:      
-      pop %ebp
-      addl $4, %esp
+      SYSCALL(10);      
       cmpl $0, %eax
       jge fin10
       negl %eax
