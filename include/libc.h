@@ -22,4 +22,10 @@ void exit();
 
 int gettime();
 
+static const char wrong_fd[] = "fd is not a valid file descriptor or is not open for writing.";
+static const char buff_not_acc[] = "buf is outside your accessible address space.";
+static const char invalid_size[] = "size contains an invalid value.";
+
+void perror(void);
+
 #endif  /* __LIBC_H__ */

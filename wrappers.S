@@ -72,7 +72,6 @@
       cmpl $0, %eax; \
       jge  end; \
       negl %eax; \
-      incl %eax; \
       leal errno, %ebx; \
       movl %eax, (%ebx); \
       movl $-1, %eax; \

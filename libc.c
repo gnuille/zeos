@@ -44,3 +44,11 @@ int strlen(char *a)
 
   return i;
 }
+
+void perror(void){
+  switch (errno) {
+    case 1:  write(1, wrong_fd, sizeof(wrong_fd));         break;
+    case 2:  write(1, buff_not_acc, sizeof(buff_not_acc)); break;
+    case 3:  write(1, invalid_size, sizeof(invalid_size)); break;
+  }
+}
