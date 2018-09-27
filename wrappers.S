@@ -59,14 +59,24 @@
       popl %gs
 
 #define SYSCALL(syscalln) \
-      leal return4, %eax; \
-      push %eax; \     
+      leal syscall_ret##syscalln, %eax; \
+      push %eax; \
       movl $syscalln, %eax; \
       push %ebp; \
       movl %esp, %ebp; \
       sysenter; \
-      return syscalln: pop %ebp; \ 
-      addl $4, %esp; \
+      syscall_ret##syscalln: pop %ebp; \
+      addl $4, %esp
+
+#define CHECK_ERROR(end) \
+      cmpl $0, %eax; \
+      jge  end; \
+      negl %eax; \
+      incl %eax; \
+      leal errno, %ebx; \
+      movl %eax, (%ebx); \
+      movl $-1, %eax; \
+
 
 ENTRY(write)
       push %ebp
@@ -76,15 +86,8 @@ ENTRY(write)
       movl 12(%ebp), %ecx
       movl 16(%ebp), %edx
       SYSCALL(4);
-#check for errors
-      cmpl $0, %eax
-      jge fin4
-      negl %eax
-      incl %eax
-      leal errno, %ebx
-      movl %eax, (%ebx)
-      movl $-1, %eax
-fin4:
+      CHECK_ERROR(write.no_error)
+write.no_error:
       pop %ebx
       pop %ebp
       ret
@@ -94,14 +97,8 @@ ENTRY(gettime)
       push %ebx
       movl %esp, %ebp
       SYSCALL(10);      
-      cmpl $0, %eax
-      jge fin10
-      negl %eax
-      incl %eax
-      leal errno, %ebx
-      movl %eax, (%ebx)
-      movl $-1, %eax
-fin10:
+      CHECK_ERROR(gettime.no_error)
+gettime.no_error:
       pop %ebx
       pop %ebp
       ret
