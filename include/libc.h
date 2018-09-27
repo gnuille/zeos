@@ -7,6 +7,7 @@
 #define __LIBC_H__
 
 #include <stats.h>
+#include <errno.h>
 
 int write(int fd, char *buffer, int size);
 
@@ -22,9 +23,9 @@ void exit();
 
 int gettime();
 
-static const char wrong_fd[] = "fd is not a valid file descriptor or is not open for writing.";
-static const char buff_not_acc[] = "buf is outside your accessible address space.";
-static const char invalid_size[] = "size contains an invalid value.";
+static const char EBADF_msg[] = "fd is not a valid file descriptor or is not open for writing.";
+static const char EFAULT_msg[] = "buf is outside your accessible address space.";
+static const char EINVAL_msg[] = "size contains an invalid value.";
 
 void perror(void);
 

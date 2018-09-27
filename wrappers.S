@@ -74,7 +74,7 @@
       negl %eax; \
       leal errno, %ebx; \
       movl %eax, (%ebx); \
-      movl $-1, %eax; \
+      movl $-1, %eax
 
 
 ENTRY(write)
@@ -85,7 +85,7 @@ ENTRY(write)
       movl 12(%ebp), %ecx
       movl 16(%ebp), %edx
       SYSCALL(4);
-      CHECK_ERROR(write.no_error)
+      CHECK_ERROR(write.no_error);
 write.no_error:
       pop %ebx
       pop %ebp
@@ -96,7 +96,7 @@ ENTRY(gettime)
       push %ebx
       movl %esp, %ebp
       SYSCALL(10);      
-      CHECK_ERROR(gettime.no_error)
+      CHECK_ERROR(gettime.no_error);
 gettime.no_error:
       pop %ebx
       pop %ebp
