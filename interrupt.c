@@ -8,6 +8,7 @@
 #include <io.h>
 #include <utils.h>
 #include <zeos_interrupt.h>
+#include <sched.h>
 
 Gate idt[IDT_ENTRIES];
 Register    idtR;
@@ -75,7 +76,7 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
 void keyboard_handler();
 void clock_handler();
 void system_call_handler();
-void writeMsr(int msr, long data);
+void writeMsr(int msr, int data);
 void syscall_handler_sysenter();
 void setIdt()
 {
@@ -86,7 +87,9 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
-  //writeMsr(0x174, 0x0 & ($__KERNEL_CS) & ($KERNEL_TSS<<8) & (syscall_handler_sysenter)<<16);
+  writeMsr(0x174,__KERNEL_CS);
+  writeMsr(0x175,INITIAL_ESP);
+  writeMsr(0x176,syscall_handler_sysenter);
   setInterruptHandler(33, keyboard_handler, 0);
   setInterruptHandler(32, clock_handler,    0);
   setTrapHandler(0x80, system_call_handler, 3);

@@ -71,8 +71,8 @@ ENTRY(writeMsr)
       push %ebp
       movl %esp, %ebp
       movl 8(%ebp), %ecx
-      movl 12(%ebp), %ecx
-      movl 16(%ebp), %edx
+      movl 12(%ebp), %eax
+      movl $0, %edx
       wrmsr
       pop %ebp
       ret
