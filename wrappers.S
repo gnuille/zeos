@@ -65,35 +65,54 @@ ENTRY(write)
       movl 8(%ebp), %ebx
       movl 12(%ebp), %ecx
       movl 16(%ebp), %edx
-      movl $4, %eax
 #retur adress load
-      leal return, %esi
+      leal return4, %eax
 #fake dynamic link
-      push %esi     
+      push %eax     
+      movl $4, %eax
       push %ebp
       movl %esp, %ebp
       sysenter
-return:
+return4:
 #undo fake dynamic link
-      addl $4, %esp
       pop %ebp
+      addl $4, %esp
 #check for errors
       cmpl $0, %eax
-      jge fin
+      jge fin4
       negl %eax
       incl %eax
       leal errno, %ebx
       movl %eax, (%ebx)
       movl $-1, %eax
-fin:
+fin4:
       pop %ebx
       pop %ebp
       ret
 
 ENTRY(gettime)
       push %ebp
+      push %ebx
       movl %esp, %ebp
+      leal return10, %eax
+      push %eax
       movl $10, %eax
-      int $0x80 /*sysenter*/
+      push %ebp
+      movl %esp, %ebp
+      sysenter
+return10:      
+      pop %ebp
+      addl $4, %esp
+      cmpl $0, %eax
+      jge fin10
+      negl %eax
+      incl %eax
+      leal errno, %ebx
+      movl %eax, (%ebx)
+      movl $-1, %eax
+fin10:
+      pop %ebx
       pop %ebp
       ret
+
+      
