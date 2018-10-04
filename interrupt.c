@@ -8,7 +8,7 @@
 #include <io.h>
 #include <zeos_interrupt.h>
 #include <sched.h>
-
+    
 extern int zeos_ticks;
 
 Gate idt[IDT_ENTRIES];
@@ -43,7 +43,7 @@ void setInterruptHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   /***********************************************************************/
   Word flags = (Word)(maxAccessibleFromPL << 13);
   flags |= 0x8E00;    /* P = 1, D = 1, Type = 1110 (Interrupt Gate) */
-
+    
   idt[vector].lowOffset       = lowWord((DWord)handler);
   idt[vector].segmentSelector = __KERNEL_CS;
   idt[vector].flags           = flags;

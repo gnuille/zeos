@@ -9,7 +9,7 @@
 #include <stats.h>
 #include <errno.h>
 
-int write(int fd, char *buffer, int size);
+int write(int fd, const char *buffer, int size);
 
 void itoa(int a, char *b);
 
