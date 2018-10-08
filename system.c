@@ -90,16 +90,16 @@ int __attribute__((__section__(".text.main")))
   /* Initialize Scheduling */
   init_sched();
 
-  /* Initialize idle task  data */
-  init_idle();
-  /* Initialize task 1 data */
-  init_task1();
-
   /* Initialize the free process queue */
   init_free_queue();
 
   /* Initialize the ready process queue */
   init_ready_queue();
+
+  /* Initialize idle task  data */
+  init_idle();
+  /* Initialize task 1 data */
+  init_task1();
 
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, usr_main, *p_usr_size);
