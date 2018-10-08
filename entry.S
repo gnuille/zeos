@@ -76,6 +76,7 @@ ENTRY(writeMsr)
       wrmsr
       pop %ebp
       ret
+
 ENTRY(keyboard_handler)
       SAVE_ALL;
       EOI;
@@ -127,3 +128,18 @@ ENTRY(clock_handler)
       call clock_routine;
       RESTORE_ALL;
       iret;
+
+ENTRY(task_switch)
+      pushl %ebp;
+      movl  %esp, %ebp;
+      pushl %esi;
+      pushl %edi;
+      pushl %ebx;
+      pushl 8(%ebp);
+      call inner_task_switch;
+      popl  %ebx;
+      popl  %edi;
+      popl  %esi;
+      movl  %ebp, %esp;
+      popl  %ebp;
+      ret;

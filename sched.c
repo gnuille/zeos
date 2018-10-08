@@ -79,6 +79,20 @@ void init_idle (void)
 
 void init_task1(void)
 {
+    struct list_head *ff = freequeue.next;
+    list_del(ff);
+    list_add_tail(ff, &readyqueue);
+
+    struct task_struct *task1_ts = list_head_to_task_struct(ff);
+    task1_ts -> PID = 1;
+    
+    allocate_DIR(task1_ts);
+    set_user_pages(task1_ts);
+    
+    tss.esp0 = KERNEL_ESP((union task_union *) task1_ts);    
+    writeMsr(0x175, KERNEL_ESP((union task_union *) task1_ts)); 
+
+    set_cr3(task1_ts->dir_pages_baseAddr); 
 }
 
 
@@ -108,4 +122,8 @@ void init_free_queue(){
 
 void init_ready_queue(){
     INIT_LIST_HEAD(&readyqueue);
+}
+
+void init_task_switch(union task_union*t){
+    
 }
