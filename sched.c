@@ -124,6 +124,6 @@ void init_ready_queue(){
     INIT_LIST_HEAD(&readyqueue);
 }
 
-void init_task_switch(union task_union*t){
+void inner_task_switch(union task_union*t){
     
 }
