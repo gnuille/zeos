@@ -11,6 +11,8 @@
     
 extern int zeos_ticks;
 
+extern union task_union *task; /* Vector de tasques */
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 char char_map[] =
@@ -105,6 +107,11 @@ void keyboard_routine()
   {
     if((llegit & 0x7F) < sizeof(char_map)/sizeof(char) && char_map[llegit & 0x7F] != '\0'){
       printc_xy(0,0,char_map[llegit & 0x7F]);
+      if (char_map[llegit & 0x7F]=='1'){
+	task_switch(&task[1]);
+      }else if (char_map[llegit & 0x7F] == '0'){
+	task_switch(&task[0]);
+      }
     }else{
       printc_xy(0,0,'C');
     }

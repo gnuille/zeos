@@ -29,6 +29,12 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 extern struct list_head blocked;
 
 
+void writeMsr(int msr, int data);
+
+void setEsp(unsigned long * data);
+
+unsigned long * getEbp();
+
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
 {
@@ -59,7 +65,7 @@ void cpu_idle(void)
 
 	while(1)
 	{
-	;
+		printk("idle");
 	}
 }
 
@@ -89,12 +95,12 @@ void init_task1(void)
     allocate_DIR(task1_ts);
     set_user_pages(task1_ts);
     
-    tss.esp0 = KERNEL_ESP((union task_union *) task1_ts);    
+    tss.esp0 = (unsigned long) KERNEL_ESP((union task_union *) task1_ts);
+    task1_ts -> kernel_esp = (unsigned long *) KERNEL_ESP((union task_union *) task1_ts);
     writeMsr(0x175, KERNEL_ESP((union task_union *) task1_ts)); 
 
     set_cr3(task1_ts->dir_pages_baseAddr); 
 }
-
 
 void init_sched(){
 
@@ -125,5 +131,15 @@ void init_ready_queue(){
 }
 
 void inner_task_switch(union task_union*t){
+    tss.esp0 = (unsigned long) t -> task.kernel_esp;
+    writeMsr(0x175, (int) t -> task.kernel_esp);
+
+    set_cr3(t -> task.dir_pages_baseAddr);
+
+    current() -> kernel_esp = getEbp(); 
     
-}
+    setEsp(t -> task.kernel_esp);
+
+    return;          
+}         
+          

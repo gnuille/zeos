@@ -137,9 +137,20 @@ ENTRY(task_switch)
       pushl %ebx;
       pushl 8(%ebp);
       call inner_task_switch;
+      addl  $4, %esp;
       popl  %ebx;
       popl  %edi;
       popl  %esi;
       movl  %ebp, %esp;
       popl  %ebp;
       ret;
+
+ENTRY(setEsp)
+      movl 4(%esp), %esp
+      popl %ebp;
+      ret;
+
+ENTRY(getEbp)
+      movl %ebp, %eax
+      ret;
+
