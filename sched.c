@@ -1,7 +1,7 @@
 /*
  * sched.c - initializes struct for task 0 anda task 1
  */
-
+#include <libc.h>
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
@@ -65,7 +65,7 @@ void cpu_idle(void)
 
 	while(1)
 	{
-		printk("idle");
+		printk("0");
 	}
 }
 

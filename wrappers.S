@@ -93,13 +93,28 @@ write.no_error:
 
 ENTRY(gettime)
       push %ebp
-      push %ebx
       movl %esp, %ebp
       SYSCALL(10);      
       CHECK_ERROR(gettime.no_error);
 gettime.no_error:
-      pop %ebx
       pop %ebp
       ret
 
-      
+ENTRY(getpid)
+      push %ebp
+      movl %esp, %ebp
+      SYSCALL(20)
+      CHECK_ERROR(getpid.no_error)
+getpid.no_error:
+      pop  %ebp
+      ret 
+
+ENTRY(fork)
+      push %ebp
+      movl %esp, %ebp
+      SYSCALL(2)
+      CHECK_ERROR(fork.no_error)
+fork.no_error:
+      pop %ebp
+      ret
+
