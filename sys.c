@@ -50,7 +50,7 @@ int sys_fork()
   struct task_struct *new_task = list_head_to task_struct(new_task_ptr);
 
   // Copy data from parent to child
-  copy_data(current(), new_task, KERNEL_STAK_SIZE);
+  copy_data(current(), new_task,(int) sizeof(union task_union));
   
   allocate_DIR(new_task);
   if (data_frame < 0 || stack_frame < 0) return -1; // No phisical space left
