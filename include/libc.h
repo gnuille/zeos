@@ -24,6 +24,10 @@ void exit();
 int gettime();
 
 static const char EBADF_msg[] = "fd is not a valid file descriptor or is not open for writing.";
+static const char EAGAIN_msg[] = "Try again";
+
+static const char ENOMEM_msg[] = "Out of memory, cannot allocate structures.";
+
 static const char EFAULT_msg[] = "buf is outside your accessible address space.";
 static const char EINVAL_msg[] = "size contains an invalid value.";
 

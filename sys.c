@@ -50,7 +50,7 @@ int sys_fork()
 	int PID=-1;
 
 	// creates the child process
-	if (list_empty(&freequeue)) return -1; // NO PROCESS LEFT
+	if (list_empty(&freequeue)) return -EAGAIN; // NO PROCESS LEFT
 	struct list_head *new_task_ptr = freequeue.next; 
 	list_del(new_task_ptr);
 
@@ -60,7 +60,6 @@ int sys_fork()
 	copy_data(current(), new_task,(int) sizeof(union task_union));
 
 	allocate_DIR(new_task);
-	// check if there is no phisical space left
 	page_table_entry * n_pt = get_PT(new_task);
 	page_table_entry * c_pt = get_PT(current());
 
@@ -78,7 +77,7 @@ int sys_fork()
 		if((new_frames[page] = alloc_frame()) < 0){
 			for(page=page-1;page >=0;page--) 
 				free_frame(new_frames[page]);
-			return -1; // no free space left	
+			return -ENOMEM; // no free space left	
 		}
 		set_ss_pag(n_pt, PAG_LOG_INIT_DATA+page, new_frames[page]);
 		set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA+page, new_frames[page]);
@@ -89,18 +88,6 @@ int sys_fork()
 		del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA+page);
 	}
 	set_cr3(get_DIR(current()));
-	/*
-	   for (page = 0; page < NUM_PAG_DATA; page++){
-	   int new_frame = alloc_frame();
-	   set_ss_pag(n_pt, PAG_LOG_INIT_DATA+page, new_frame);
-	   set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA, new_frame);
-	   copy_data((PAG_LOG_INIT_DATA+page)<<12,
-	   (PAG_LOG_INIT_DATA+NUM_PAG_DATA)<<12,
-	   PAGE_SIZE);
-	   del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA);
-	   set_cr3(get_DIR(current()));
-	   }
-	 */ 
 	PID = MAX_PID++;
 	new_task->PID = PID;
 	new_task->state = ST_READY;
