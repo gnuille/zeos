@@ -11,9 +11,10 @@
  * to protect against out of bound accesses.
  */
 union task_union protected_tasks[NR_TASKS+2]
-  __attribute__((__section__(".data.task")));
+__attribute__((__section__(".data.task")));
 
 int MAX_PID = 42;
+int quantum_left;
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 
@@ -24,18 +25,17 @@ struct task_struct * idle_task;
 #if 1
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
-  return list_entry( l, struct task_struct, list);
+	return list_entry( l, struct task_struct, list);
 }
 #endif
 
 extern struct list_head blocked;
 
-
 void writeMsr(int msr, int data);
 
 void setEsp(unsigned long * data);
 
-unsigned long * getEbp();
+unsigned long  getEbp();
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
@@ -73,76 +73,116 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-    struct list_head *ff = freequeue.next;
-    list_del(ff);
-    list_add_tail(ff, &readyqueue);
-    struct task_struct *idle_ts = list_head_to_task_struct(ff);
-    idle_ts -> PID = 0;
-    ((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-1] = (unsigned long) cpu_idle;
-    ((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-2] = (unsigned long) 0;
-    idle_ts -> kernel_esp = (unsigned long *) &(((unsigned long *)idle_ts)[KERNEL_STACK_SIZE-2]);
-    allocate_DIR(idle_ts);   
-    idle_task = idle_ts; 
-    ++MAX_PID;
-}
+	struct list_head *ff = freequeue.next;
+	list_del(ff);
+	struct task_struct *idle_ts = list_head_to_task_struct(ff);
+	idle_ts -> PID = 0;
+	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-1] = (unsigned long) cpu_idle;
+	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-2] = (unsigned long) 0;
+	idle_ts -> kernel_esp = (unsigned long *) &(((unsigned long *)idle_ts)[KERNEL_STACK_SIZE-2]);
+	allocate_DIR(idle_ts);   
+	idle_task = idle_ts;
+ }
 
 void init_task1(void)
 {
-    struct list_head *ff = freequeue.next;
-    list_del(ff);
-    list_add_tail(ff, &readyqueue);
+	struct list_head *ff = freequeue.next;
+	list_del(ff);
+	
+	struct task_struct *task1_ts = list_head_to_task_struct(ff);
+	task1_ts -> PID = MAX_PID++;
 
-    struct task_struct *task1_ts = list_head_to_task_struct(ff);
-    task1_ts -> PID = MAX_PID++;
-    
-    allocate_DIR(task1_ts);
-    set_user_pages(task1_ts);
-    
-    tss.esp0 = (unsigned long) KERNEL_ESP((union task_union *) task1_ts);
-    task1_ts -> kernel_esp = (unsigned long *) KERNEL_ESP((union task_union *) task1_ts);
-    writeMsr(0x175, KERNEL_ESP((union task_union *) task1_ts)); 
+	allocate_DIR(task1_ts);
+	set_user_pages(task1_ts);
 
-    set_cr3(task1_ts->dir_pages_baseAddr); 
+	tss.esp0 = (unsigned long) KERNEL_ESP((union task_union *) task1_ts);
+	task1_ts -> kernel_esp = (unsigned long *) KERNEL_ESP((union task_union *) task1_ts);
+	writeMsr(0x175, KERNEL_ESP((union task_union *) task1_ts)); 
+	task1_ts -> ticks = 0;
+	task1_ts -> quantum = 12;
+	quantum_left = 12;
+	task1_ts -> state = ST_RUN;
+	set_cr3(task1_ts->dir_pages_baseAddr); 
 }
 
 void init_sched(){
-
 }
 
 struct task_struct* current()
 {
-  int ret_value;
-  
-  __asm__ __volatile__(
-  	"movl %%esp, %00"
-	: "=g" (ret_value)
-  );
-  return (struct task_struct*)(ret_value&0xfffff000);
+	int ret_value;
+
+	__asm__ __volatile__(
+			"movl %%esp, %00"
+			: "=g" (ret_value)
+			);
+	return (struct task_struct*)(ret_value&0xfffff000);
 }
 
 void init_free_queue(){
-    int i;
-    INIT_LIST_HEAD(&freequeue);        
-    for (i = 0; i < NR_TASKS; ++i){
-        task[i].task.PID = -1;
-        list_add_tail(&task[i].task.list, &freequeue);
-    }
+	int i;
+	INIT_LIST_HEAD(&freequeue);        
+	for (i = 0; i < NR_TASKS; ++i){
+		task[i].task.PID = -1;
+		list_add_tail(&task[i].task.list, &freequeue);
+	}
 }
 
 void init_ready_queue(){
-    INIT_LIST_HEAD(&readyqueue);
+	INIT_LIST_HEAD(&readyqueue);
 }
 
 void inner_task_switch(union task_union*t){
-    tss.esp0 = (unsigned long) t -> task.kernel_esp;
-    writeMsr(0x175, (int) t -> task.kernel_esp);
+	tss.esp0 =  KERNEL_ESP(t);
+ //(unsigned long) t -> task.kernel_esp;
+	writeMsr(0x175, (int) KERNEL_ESP(t));
 
-    set_cr3(t -> task.dir_pages_baseAddr);
+	set_cr3(t -> task.dir_pages_baseAddr);
 
-    current() -> kernel_esp = getEbp(); 
-    
-    setEsp(t -> task.kernel_esp);
+	current() -> kernel_esp = (unsigned long *) getEbp(); 
 
-    return;          
+	setEsp(t -> task.kernel_esp);
+
+	return;          
 }         
-          
+
+void update_sched_data_rr(void){
+	current()->ticks++;
+	quantum_left--;
+}
+
+int needs_sched_rr(void){
+	return quantum_left <= 0 && !list_empty(&readyqueue); 
+        //return current()->quantum && !(current()->ticks % current()->quantum) && !list_empty(&readyqueue);
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue){
+	if( dst_queue == &freequeue ) {
+		if( t->state != ST_RUN ) list_del(&t->list);
+		list_add_tail(&t->list, dst_queue);	
+	}else if( dst_queue == &readyqueue ) {
+		if( t->state != ST_RUN ) list_del(&t->list);
+		list_add_tail(&t->list, dst_queue);
+		quantum_left = t->quantum;
+		t->state = ST_READY;
+	}else if( dst_queue == NULL ){
+		if( t->state != ST_RUN ) list_del(&t->list);
+		t->state = ST_RUN;
+	}else{ /* error */}
+} 
+
+void sched_next_rr(void){
+	struct list_head* next = readyqueue.next;
+	struct task_struct* nt = list_head_to_task_struct(next);
+	update_process_state_rr(current(), &readyqueue);
+	update_process_state_rr(nt, NULL);
+	task_switch((union task_union * ) nt);
+}
+
+int get_quantum( struct task_struct *t ){
+	return t->quantum;
+}
+
+void set_quantum( struct task_struct *t, int new_quantum ){
+	t->quantum = new_quantum;
+}

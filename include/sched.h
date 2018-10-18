@@ -8,22 +8,24 @@
 #include <list.h>
 #include <types.h>
 #include <mm_address.h>
-
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
-  int PID;			/* Process ID. This MUST be the first field of the struct. */
-  page_table_entry * dir_pages_baseAddr;
-  struct list_head list;
-  unsigned long * kernel_esp;
+	int PID;			/* Process ID. This MUST be the first field of the struct. */
+	page_table_entry * dir_pages_baseAddr;
+	struct list_head list;
+	int ticks;
+	int quantum;
+	enum state_t state;
+	unsigned long * kernel_esp;
 };
 
 union task_union {
-  struct task_struct task;
-  unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
+	struct task_struct task;
+	unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
 };
 
 
@@ -60,10 +62,13 @@ page_table_entry * get_PT (struct task_struct *t) ;
 
 page_table_entry * get_DIR (struct task_struct *t) ;
 
+int get_quantum(struct task_struct *t);
+
+void set_quantum(struct task_struct *t, int new_quantum);
+
 /* Headers for the scheduling policy */
 void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
-
 #endif  /* __SCHED_H__ */
