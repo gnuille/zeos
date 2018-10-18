@@ -12,13 +12,13 @@ main(void)
 
 	if (fork()){
 		itoa(getpid(), buff);
-		write(1, "Soc el proces pare. ", sizeof("Soc el proces pare. "));
+		write(1, "Soc el proces pare. ", strlen("Soc el proces pare. "));
 		write(1, buff, strlen(buff));
 		write(1, "\n", 1);
 	}
 	else{
 		itoa(getpid(), buff);
-		write(1, "Soc el proces fill. ", sizeof("Soc el proces fill. "));
+		write(1, "Soc el proces fill. ", strlen("Soc el proces fill. "));
 		write(1, buff, strlen(buff));
 		write(1, "\n", 1);
 	}

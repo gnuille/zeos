@@ -71,10 +71,11 @@ int sys_fork()
   for (page = 0; page < NUM_PAG_CODE; page++){
      n_pt[PAG_LOG_INIT_CODE+page].entry = c_pt[PAG_LOG_INIT_CODE+page].entry;
   }
+  
   int new_frames[NUM_PAG_DATA];
   for(page = 0; page< NUM_PAG_DATA; page++){
-  	if(new_frames[page] = alloc_frame() < 0){
-		for(;page >=0;page--) 
+  	if((new_frames[page] = alloc_frame()) < 0){
+		for(page=page-1;page >=0;page--) 
 			free_frame(new_frames[page]);
 		return -1; // no free space left	
 	}
@@ -98,8 +99,7 @@ int sys_fork()
     del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA);
     set_cr3(get_DIR(current()));
   }
-  
-  */
+  */ 
   PID = MAX_PID++;
   new_task->PID = PID;
   int index  = (getEbp() - (int) current())/sizeof(int);
