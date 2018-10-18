@@ -111,6 +111,8 @@ void keyboard_routine()
 	task_switch(&task[1]);
       }else if (char_map[llegit & 0x7F] == '0'){
 	task_switch(&task[0]);
+      } else if (char_map[llegit & 0x7F]=='2'){
+	task_switch(&task[2]);
       }
     }else{
       printc_xy(0,0,'C');

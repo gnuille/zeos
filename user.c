@@ -1,18 +1,27 @@
 #include <libc.h>
 
-char buff[24];
+char buff[42];
 
 int pid;
 
 int __attribute__ ((__section__(".text.main")))
-  main(void)
+main(void)
 {
-    /* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
-     /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
-   char b[64];
-   while(1){
-     itoa(fork(), b);
-     write(1, b, strlen(b));
-   }
-   return 0;
+	/* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
+	/* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
+
+	if (fork()){
+		itoa(getpid(), buff);
+		write(1, "Soc el proces pare. ", sizeof("Soc el proces pare. "));
+		write(1, buff, strlen(buff));
+		write(1, "\n", 1);
+	}
+	else{
+		itoa(getpid(), buff);
+		write(1, "Soc el proces fill. ", sizeof("Soc el proces fill. "));
+		write(1, buff, strlen(buff));
+		write(1, "\n", 1);
+	}
+	while(1);
+	return 0;
 }

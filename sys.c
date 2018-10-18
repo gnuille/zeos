@@ -71,24 +71,44 @@ int sys_fork()
   for (page = 0; page < NUM_PAG_CODE; page++){
      n_pt[PAG_LOG_INIT_CODE+page].entry = c_pt[PAG_LOG_INIT_CODE+page].entry;
   }
-
+  int new_frames[NUM_PAG_DATA];
+  for(page = 0; page< NUM_PAG_DATA; page++){
+  	if(new_frames[page] = alloc_frame() < 0){
+		for(;page >=0;page--) 
+			free_frame(new_frames[page]);
+		return -1; // no free space left	
+	}
+	set_ss_pag(n_pt, PAG_LOG_INIT_DATA+page, new_frames[page]);
+	set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA+page, new_frames[page]);
+	copy_data((PAG_LOG_INIT_DATA+page)<<12,
+		  (PAG_LOG_INIT_DATA+NUM_PAG_DATA+page)<<12,
+		  PAGE_SIZE
+		 );
+   	del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA+page);
+  }
+  set_cr3(get_DIR(current()));
+  /*
   for (page = 0; page < NUM_PAG_DATA; page++){
     int new_frame = alloc_frame();
     set_ss_pag(n_pt, PAG_LOG_INIT_DATA+page, new_frame);
     set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA, new_frame);
-    copy_data((int *)c_pt[PAG_LOG_INIT_DATA+page].bits.pbase_addr,
-		(int *)c_pt[PAG_LOG_INIT_DATA+NUM_PAG_DATA].bits.pbase_addr,
-		PAGE_SIZE);
+    copy_data((PAG_LOG_INIT_DATA+page)<<12,
+	      (PAG_LOG_INIT_DATA+NUM_PAG_DATA)<<12,
+	       PAGE_SIZE);
     del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA);
     set_cr3(get_DIR(current()));
   }
   
+  */
   PID = MAX_PID++;
-
-  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-17] = ret_from_fork;
-  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18] = 0;
-
-  new_task->kernel_esp= &((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18];
+  new_task->PID = PID;
+  int index  = (getEbp() - (int) current())/sizeof(int);
+//  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-17-5-1] = ret_from_fork;
+//  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18-5-1] = 0;
+  ((union task_union*)new_task)->stack[index] = ret_from_fork;
+  ((union task_union*)new_task)->stack[index-1] = 0;
+//  new_task->kernel_esp= &((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18-5];
+  new_task->kernel_esp= &((union task_union*)new_task)->stack[index-1];
 
   list_add_tail(new_task_ptr, &readyqueue); 	
 
