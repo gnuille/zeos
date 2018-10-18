@@ -13,6 +13,8 @@
 union task_union protected_tasks[NR_TASKS+2]
   __attribute__((__section__(".data.task")));
 
+int MAX_PID = 42;
+
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 
 struct list_head freequeue, readyqueue;
@@ -81,6 +83,7 @@ void init_idle (void)
     idle_ts -> kernel_esp = (unsigned long *) &(((unsigned long *)idle_ts)[KERNEL_STACK_SIZE-2]);
     allocate_DIR(idle_ts);   
     idle_task = idle_ts; 
+    ++MAX_PID;
 }
 
 void init_task1(void)
@@ -90,7 +93,7 @@ void init_task1(void)
     list_add_tail(ff, &readyqueue);
 
     struct task_struct *task1_ts = list_head_to_task_struct(ff);
-    task1_ts -> PID = 1;
+    task1_ts -> PID = MAX_PID++;
     
     allocate_DIR(task1_ts);
     set_user_pages(task1_ts);
@@ -111,7 +114,7 @@ struct task_struct* current()
   int ret_value;
   
   __asm__ __volatile__(
-  	"movl %%esp, %0"
+  	"movl %%esp, %00"
 	: "=g" (ret_value)
   );
   return (struct task_struct*)(ret_value&0xfffff000);

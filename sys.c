@@ -21,6 +21,8 @@ int zeos_ticks;
 
 extern struct list_head freequeue, readyqueue;
 
+extern int MAX_PID;
+
 int check_fd(int fd, int permissions)
 {
   if (fd!=1) return -EBADF;
@@ -38,22 +40,26 @@ int sys_getpid()
 	return current()->PID;
 }
 
+int ret_from_fork(){
+    return 0;
+}
+
 int sys_fork()
 {
   int PID=-1;
 
   // creates the child process
-  if (list_empty(freequeue)) return -1; // NO PROCESS LEFT
+  if (list_empty(&freequeue)) return -1; // NO PROCESS LEFT
   struct list_head *new_task_ptr = freequeue.next; 
   list_del(new_task_ptr);
 
-  struct task_struct *new_task = list_head_to task_struct(new_task_ptr);
+  struct task_struct *new_task = list_head_to_task_struct(new_task_ptr);
 
   // Copy data from parent to child
-  copy_data(current(), new_task, KERNEL_STAK_SIZE);
+  copy_data(current(), new_task, sizeof(union task_union));
   
   allocate_DIR(new_task);
-  if (data_frame < 0 || stack_frame < 0) return -1; // No phisical space left
+  // check if there is no phisical space left
   page_table_entry * n_pt = get_PT(new_task);
   page_table_entry * c_pt = get_PT(current());
 
@@ -62,24 +68,29 @@ int sys_fork()
      n_pt[1+page].entry = c_pt[1+page].entry;
   }
 
-  for (page = 0; page < NUM_PAGE_CODE; page++){
+  for (page = 0; page < NUM_PAG_CODE; page++){
      n_pt[PAG_LOG_INIT_CODE+page].entry = c_pt[PAG_LOG_INIT_CODE+page].entry;
   }
 
-  for (page = 0; page < NUM_PAGE_DATA; page++){
+  for (page = 0; page < NUM_PAG_DATA; page++){
     int new_frame = alloc_frame();
     set_ss_pag(n_pt, PAG_LOG_INIT_DATA+page, new_frame);
-    set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAGE_DATA, new_frame);
-    copy_data(c_pt[PAG_LOG_INIT_DATA+page].entry.base_addr,
-		c_pt[PAG_LOG_INIT_DATA+NUM_PAGE_DATA].entry.base_addr,
+    set_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA, new_frame);
+    copy_data((int *)c_pt[PAG_LOG_INIT_DATA+page].bits.pbase_addr,
+		(int *)c_pt[PAG_LOG_INIT_DATA+NUM_PAG_DATA].bits.pbase_addr,
 		PAGE_SIZE);
-    del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAGE_DATA);
+    del_ss_pag(c_pt, PAG_LOG_INIT_DATA+NUM_PAG_DATA);
     set_cr3(get_DIR(current()));
   }
   
-  PID = 42;
+  PID = MAX_PID++;
 
-  list_add_tail(new_task_ptr, readyqueue); 	
+  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-17] = ret_from_fork;
+  ((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18] = 0;
+
+  new_task->kernel_esp= &((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-18];
+
+  list_add_tail(new_task_ptr, &readyqueue); 	
 
   return PID;
 }
