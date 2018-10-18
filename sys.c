@@ -56,11 +56,7 @@ int sys_fork()
   struct task_struct *new_task = list_head_to_task_struct(new_task_ptr);
 
   // Copy data from parent to child
-<<<<<<< HEAD
-  copy_data(current(), new_task, sizeof(union task_union));
-=======
   copy_data(current(), new_task,(int) sizeof(union task_union));
->>>>>>> 854c75ac074c896ff90537308b757e9f9d5a875a
   
   allocate_DIR(new_task);
   // check if there is no phisical space left
