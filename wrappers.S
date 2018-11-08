@@ -31,50 +31,50 @@
 
 #define SAVE_ALL \
 	pushl %gs; \
-pushl %fs; \
-pushl %es; \
-pushl %ds; \
-pushl %eax; \
-pushl %ebp; \
-pushl %edi; \
-pushl %esi; \
-pushl %edx; \
-pushl %ecx; \
-pushl %ebx; \
-movl $__KERNEL_DS, %edx;    \
-movl %edx, %ds;           \
-movl %edx, %es
+	pushl %fs; \
+	pushl %es; \
+	pushl %ds; \
+	pushl %eax; \
+	pushl %ebp; \
+	pushl %edi; \
+	pushl %esi; \
+	pushl %edx; \
+	pushl %ecx; \
+	pushl %ebx; \
+	movl $__KERNEL_DS, %edx;    \
+	movl %edx, %ds;           \
+	movl %edx, %es
 
 #define RESTORE_ALL \
 	popl %ebx;\
-popl %ecx;\
-popl %edx;\
-popl %esi;\
-popl %edi;\
-popl %ebp;\
-popl %eax;\
-popl %ds; \
-popl %es; \
-popl %fs; \
-popl %gs
+	popl %ecx;\
+	popl %edx;\
+	popl %esi;\
+	popl %edi;\
+	popl %ebp;\
+	popl %eax;\
+	popl %ds; \
+	popl %es; \
+	popl %fs; \
+	popl %gs
 
 #define SYSCALL(syscalln) \
 	leal syscall_ret##syscalln, %eax; \
-push %eax; \
-movl $syscalln, %eax; \
-push %ebp; \
-movl %esp, %ebp; \
-sysenter; \
-syscall_ret##syscalln: pop %ebp; \
-addl $4, %esp
+	push %eax; \
+	movl $syscalln, %eax; \
+	push %ebp; \
+	movl %esp, %ebp; \
+	sysenter; \
+	syscall_ret##syscalln: pop %ebp; \
+	addl $4, %esp
 
 #define CHECK_ERROR(end) \
 	cmpl $0, %eax; \
-jge  end; \
-negl %eax; \
-leal errno, %ebx; \
-movl %eax, (%ebx); \
-movl $-1, %eax
+	jge  end; \
+	negl %eax; \
+	leal errno, %ebx; \
+	movl %eax, (%ebx); \
+	movl $-1, %eax
 
 
 ENTRY(write)
@@ -95,8 +95,6 @@ ENTRY(gettime)
 	push %ebp
 	movl %esp, %ebp
 	SYSCALL(10);      
-	CHECK_ERROR(gettime.no_error);
-	gettime.no_error:
 	pop %ebp
 	ret
 
@@ -104,17 +102,17 @@ ENTRY(getpid)
 	push %ebp
 	movl %esp, %ebp
 	SYSCALL(20)
-CHECK_ERROR(getpid.no_error)
-	getpid.no_error:
 	pop  %ebp
 	ret 
 
 ENTRY(fork)
 	push %ebp
 	movl %esp, %ebp
+	push %ebx
 	SYSCALL(2)
-CHECK_ERROR(fork.no_error)
+	CHECK_ERROR(fork.no_error)
 	fork.no_error:
+	pop %ebx
 	pop %ebp
 	ret
 
@@ -122,7 +120,5 @@ ENTRY(exit)
 	push %ebp
 	movl %esp, %ebp
 	SYSCALL(1)
-CHECK_ERROR(exit.no_error)
-	exit.no_error: 
 	pop %ebp
 	ret

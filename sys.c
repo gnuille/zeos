@@ -51,7 +51,7 @@ int sys_fork()
 
 	// creates the child process
 	if (list_empty(&freequeue)) return -EAGAIN; // NO PROCESS LEFT
-	struct list_head *new_task_ptr = freequeue.next; 
+	struct list_head *new_task_ptr = list_first(&freequeue);
 	list_del(new_task_ptr);
 
 	struct task_struct *new_task = list_head_to_task_struct(new_task_ptr);
@@ -114,14 +114,12 @@ void sys_exit()
 	}
 	update_process_state_rr(a,&freequeue);
 	if(!list_empty(&readyqueue)){
-		struct task_struct * ts = list_head_to_task_struct(readyqueue.next);
+		struct task_struct * ts = list_head_to_task_struct(list_first(&readyqueue));
 		update_process_state_rr(ts, NULL);
 		task_switch((union task_union*)ts);
 	}else{
 		task_switch((union task_union*) &idle_task);
 	}	
-	
-	
 }
 
 #define CHUNK_SIZE 64

@@ -1,0 +1,263 @@
+bootsect.S:SETUPSECS = 0			! default nr of setup-sectors
+bootsect.S:BOOTSEG   = 0x07C0		! original address of boot-sector
+bootsect.S:INITSEG   = 0x9000		! final address of boot-sector
+bootsect.S:SYSSEG    = 0x1000		! kernel (protected-mode) address
+bootsect.S:go:	mov	di,#0x4000-12	! 0x4000 is arbitrary value >= length of
+bootsect.S:	mov	ss,ax		! put stack at INITSEG:0x4000-12.
+bootsect.S:! well, that went ok, I hope. Now we have to reprogram the interrupts :-(
+bootsect.S:! we put them right after the intel-reserved hardware interrupts, at
+bootsect.S:! int 0x20-0x2F. There they won't mess up anything. Sadly IBM really
+bootsect.S:! rectify it afterwards. Thus the bios puts interrupts at 0x08-0x0f,
+bootsect.S:	out	#0x20,al	! send it to 8259A-1
+bootsect.S:	out	#0xA0,al	! and to 8259A-2
+bootsect.S:	mov	al,#0x04	! 8259-1 is master
+bootsect.S:	mov	al,#0x02	! 8259-2 is slave
+bootsect.S:! things as simple as possible, we do no register set-up or anything,
+bootsect.S:! we let the GNU-compiled 32-bit programs do that. We just jump to
+bootsect.S:! in 32-bit protected mode.
+bootsect.S:	mov	cr0,eax		! a partir del i386 aix�ja � possible fer-ho
+bootsect.S:! Well, that certainly wasn't fun :-(. Hopefully it works, and we don't
+bootsect.S:! need no steenking BIOS anyway (except for the initial loading :-).
+bootsect.S:!	Manual, Mixing 16-bit and 32-bit code, page 16-6)
+bootsect.S:	db	0x66,0xea	! prefix + jmpi-opcode
+bootsect.S:! in:	es - starting address segment (normally 0x1000)
+bootsect.S:	jnz	empty_8042_loop	! yes - loop
+bootsect.S:  .word  0xFFFF           ! 4Gb - (0x100000*0x1000 = 4Gb)
+bootsect.S:  .word  0xFFFF           ! 4Gb - (0x100000*0x1000 = 4Gb)
+bootsect.S:  .word  0xFFFF           ! 4Gb - (0x100000*0x1000 = 4Gb)
+bootsect.S:  .word  0xFFFF           ! 4Gb - (0x100000*0x1000 = 4Gb)
+build.c: *  $Id: build.c,v 1.1.1.1 2006-09-04 15:05:34 jcosta Exp $
+build.c: * This file builds a disk-image from three different files:
+build.c: * - bootsect: exactly 512 bytes of 8086 machine code, loads the rest
+build.c: * - setup: 8086 machine code, sets up system parm
+build.c: * - system: 80386 code for actual system
+build.c:		die("%s: Non-Minix header", name);
+build.c:		sz -= l;
+build.c:		uz -= l;
+Binary file core matches
+entry.S: * entry.S - Entry point to system mode from user mode
+entry.S:/**   0(%esp) - %ebx    \                        **/
+entry.S:/**   4(%esp) - %ecx     |                       **/
+entry.S:/**   8(%esp) - %edx     |                       **/
+entry.S:/**   C(%esp) - %esi     | Register saved        **/
+entry.S:/**  10(%esp) - %edi     |  by 'save'            **/
+entry.S:/**  14(%esp) - %ebp     |                       **/
+entry.S:/**  18(%esp) - %eax     |                       **/
+entry.S:/**  1C(%esp) - %ds      |                       **/
+entry.S:/**  20(%esp) - %es      |                       **/
+entry.S:/**  24(%esp) - %fs      |                       **/
+entry.S:/**  28(%esp) - %gs     /                        **/
+entry.S:/**  2C(%esp) - %eip    \                        **/
+entry.S:/**  30(%esp) - %cs      |                       **/
+entry.S:/**  34(%esp) - %eflags  |  Return context saved **/
+entry.S:/**  38(%esp) - %oldesp  |   by the processor.   **/
+entry.S:/**  3C(%esp) - %oldss  /                        **/
+entry.S:      movl $-38, %eax;
+entry.S:      movl $-38, %eax
+generate_gdbcmd_file.sh:TEXT=$(readelf -R .text user|grep 0x|head -1|cut -d' ' -f3)
+hardware.c: *   x = 0 -> enabled
+hardware.c: *   x = 1 -> disabled
+hardware.c:  : "i" (0xfc)       /* 0xFF = 11111111 -> all bits disabled */
+include/mm.h: * mm.h - Capçalera del mòdul de gestió de memòria
+include/stats.h:  unsigned long total_trans; /* Number of times the process has got the CPU: READY->RUN transitions */
+Binary file include/asm.h matches
+include/segment.h: * segment.h - Constants de segment per a les entrades de la GDT
+include/mm_address.h:#define USER_ESP	L_USER_START+(NUM_PAG_CODE+NUM_PAG_DATA)*0x1000-16
+include/hardware.h: * hardware.h - Rutines hardware per manegar els accesos a baix nivell
+include/hardware.h: *   x = 0 -> activada
+include/hardware.h: *   x = 1 -> no activada
+include/sched.h: * sched.h - Estructures i macros pel tractament de processos
+include/sched.h:#define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
+include/io.h: * io.h - Definició de l'entrada/sortida per pantalla en mode sistema
+include/libc.h: * libc.h - macros per fer els traps amb diferents arguments
+include/entry.h: * entry.h - Definició del punt d'entrada de les crides al sistema
+include/system.h: * system.h - Capçalera del mòdul principal del sistema operatiu
+include/types.h: * types.h - Definició de tipus i estructures de dades
+include/types.h:} Descriptor;     /* R1: pg. 3-11, 4-3 */
+include/types.h:} Gate;     /* R1: pg. 5-11 */
+include/types.h:  Word  PreviousTaskLink;   /* 0          R1: pg. 6-5  */
+include/types.h:  Word  ss1;                /* 16 |-    for each       */
+include/types.h:  DWord edi;                /* 68 |- Saved registers   */
+include/types.h:/*  /--------------------------------------\  */
+include/types.h:/*  \--------------------------------------/  */
+include/types.h:/*                             R1: pg. 2-10   */
+include/types.h:/*  /--------------------------------------\           */
+include/types.h:/*  \--------------------------------------/           */
+include/types.h:/*  TI    = 0 -> GDT ; 1 -> LDT                        */
+include/types.h:/*  RPL   = Requestor Privilege Level     R1: pg. 3-9  */
+include/types.h:/*** THE EFLAGS ****************************************** R1: pg. 2-8 ****/
+include/types.h:/**   -----------------------------------------------------------------  **/
+include/types.h:/**   -----------------------------------------------------------------  **/
+include/interrupt.h: * interrupt.h - Definició de les diferents rutines de tractament d'exepcions
+include/list.h: * INIT_LIST_HEAD - Initializes an empty list.
+include/list.h: * list_add - add a new entry
+include/list.h: * list_add_tail - add a new entry
+include/list.h: * list_del - deletes entry from list.
+include/list.h: * list_is_last - tests whether @list is the last entry in list @head
+include/list.h: * list_empty - tests whether a list is empty
+include/list.h: * list_entry - get the struct for this entry
+include/list.h:            ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+include/list.h: * list_for_each	-	iterate over a list
+include/list.h:	for (pos = (head)->next; pos != (head); pos = pos->next)
+include/list.h: * list_for_each_safe   -       iterate over a list safe against removal of list entry
+include/list.h:        for (pos = (head)->next, n = pos->next; pos != (head); \
+include/list.h:                pos = n, n = pos->next)
+include/list.h: * list_first   -   returns the first list item
+include/list.h:         (head)->next
+interrupt.c: * interrupt.c -
+interrupt.c:  'b','n','m',',','.','-','\0','*',
+interrupt.c:  '8','9','-','4','5','6','+','1',
+interrupt.c:  /* THE INTERRUPTION GATE FLAGS:                          R1: pg. 5-11  */
+interrupt.c:  /* THE TRAP GATE FLAGS:                                  R1: pg. 5-11  */
+interrupt.c:     the system calls will be thread-safe. */
+interrupt.c:  idtR.limit = IDT_ENTRIES * sizeof(Gate) - 1;
+io.c: * io.c - 
+Binary file libauxjp.a matches
+libc.c:		b[i1]=b[i-i1-1];
+libc.c:		b[i-i1-1]=c;
+Binary file libzeos.a matches
+list.c:	list->next = list;
+list.c:	list->prev = list;
+list.c:	next->prev = new;
+list.c:	new->next = next;
+list.c:	new->prev = prev;
+list.c:	prev->next = new;
+list.c: * list_add - add a new entry
+list.c:	__list_add(new, head, head->next);
+list.c: * list_add_tail - add a new entry
+list.c:	__list_add(new, head->prev, head);
+list.c:	next->prev = prev;
+list.c:	prev->next = next;
+list.c: * list_del - deletes entry from list.
+list.c:	__list_del(entry->prev, entry->next);
+list.c:	entry->next = (void*) 0;
+list.c:	entry->prev = (void*) 0;
+list.c: * list_is_last - tests whether @list is the last entry in list @head
+list.c:	return list->next == head;
+list.c: * list_empty - tests whether a list is empty
+list.c:	return head->next == head;
+Makefile:AS86	= as86 -0 -a
+Makefile:LD86	= ld86 -0
+Makefile:HOSTCFLAGS = -Wall -Wstrict-prototypes -g
+Makefile:CC      = gcc -m32
+Makefile:AS      = as --32
+Makefile:LD      = ld -melf_i386
+Makefile:OBJCOPY = objcopy -O binary -R .note -R .comment -S
+Makefile:CFLAGS = -O2 -g $(JP) -fno-omit-frame-pointer -ffreestanding -Wall -I$(INCLUDEDIR)
+Makefile:ASMFLAGS = -I$(INCLUDEDIR)
+Makefile:SYSLDFLAGS = -T system.lds
+Makefile:USRLDFLAGS = -T user.lds
+Makefile:LINKFLAGS = -g
+Makefile:LIBZEOS = -L . -l zeos 
+Makefile:	$(HOSTCC) $(HOSTCFLAGS) -o $@ $<
+Makefile:	$(LD86) -s -o $@ $<
+Makefile:	$(AS86) -o $@ $<
+Makefile:	$(CPP) $(ASMFLAGS) -traditional $< -o $@
+Makefile:	$(CPP) $(ASMFLAGS) -o $@ $<
+Makefile:	$(CPP) $(ASMFLAGS) -o $@ $<
+Makefile:	$(CPP) $(ASMFLAGS) -o $@ $<
+Makefile:	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS)
+Makefile:	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $< $(USROBJ)
+Makefile:	rm -f *.o *.s bochsout.txt parport.out system.out system bootsect zeos.bin user user.out *~ build
+Makefile:	bochs -q -f .bochsrc
+Makefile:	bochs -q -f .bochsrc_gdb &
+Makefile:	gdb -x .gdbcmd system
+Makefile:	bochs_nogdb -q -f .bochsrc
+mm.c: * mm.c - Memory Management: Paging & segment memory management
+mm.c:/* alloc_frame - Search a free physical page (== frame) and mark it as USED_FRAME. 
+mm.c: * Returns the frame number or -1 if there isn't any frame available. */
+mm.c:    return -1;
+mm.c:/* free_frame - Mark as FREE_FRAME the frame  'frame'.*/
+mm.c:/* set_ss_pag - Associates logical page 'page' with physical page 'frame' */
+mm.c:/* del_ss_pag - Removes mapping from logical page 'logical_page' */
+mm.c:/* get_frame - Returns the physical frame associated to page 'logical_page' */
+sched.c: * sched.c - initializes struct for task 0 anda task 1
+sched.c:/* get_DIR - Returns the Page Directory address for task 't' */
+sched.c:	return t->dir_pages_baseAddr;
+sched.c:/* get_PT - Returns the Page Table address for task 't' */
+sched.c:	return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
+sched.c:	pos = ((int)t-(int)task)/sizeof(union task_union);
+sched.c:	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+sched.c:	idle_ts -> PID = 0;
+sched.c:	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-1] = (unsigned long) cpu_idle;
+sched.c:	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-2] = (unsigned long) 0;
+sched.c:	idle_ts -> kernel_esp = (unsigned long *) &(((unsigned long *)idle_ts)[KERNEL_STACK_SIZE-2]);
+sched.c:	task1_ts -> PID = MAX_PID++;
+sched.c:	task1_ts -> kernel_esp = (unsigned long *) KERNEL_ESP((union task_union *) task1_ts);
+sched.c:	task1_ts -> ticks = 0;
+sched.c:	task1_ts -> quantum = 12;
+sched.c:	task1_ts -> state = ST_RUN;
+sched.c:	set_cr3(task1_ts->dir_pages_baseAddr); 
+sched.c:		task[i].task.PID = -1;
+sched.c: //(unsigned long) t -> task.kernel_esp;
+sched.c:	set_cr3(t -> task.dir_pages_baseAddr);
+sched.c:	current() -> kernel_esp = (unsigned long *) getEbp(); 
+sched.c:	setEsp(t -> task.kernel_esp);
+sched.c:	current()->ticks++;
+sched.c:	quantum_left--;
+sched.c:        //return current()->quantum && !(current()->ticks % current()->quantum) && !list_empty(&readyqueue);
+sched.c:		if( t->state != ST_RUN ) list_del(&t->list);
+sched.c:		list_add_tail(&t->list, dst_queue);	
+sched.c:		if( t->state != ST_RUN ) list_del(&t->list);
+sched.c:		list_add_tail(&t->list, dst_queue);
+sched.c:		quantum_left = t->quantum;
+sched.c:		t->state = ST_READY;
+sched.c:		if( t->state != ST_RUN ) list_del(&t->list);
+sched.c:		t->state = ST_RUN;
+sched.c:	return t->quantum;
+sched.c:	t->quantum = new_quantum;
+sys.c: * sys.c - Syscalls implementation
+sys.c:	if (fd!=1) return -EBADF;
+sys.c:	if (permissions!=ESCRIPTURA) return -EACCES;
+sys.c:	return -38; /*ENOSYS*/
+sys.c:	return current()->PID;
+sys.c:	int PID=-1;
+sys.c:	if (list_empty(&freequeue)) return -EAGAIN; // NO PROCESS LEFT
+sys.c:			for(page=page-1;page >=0;page--) 
+sys.c:			return -ENOMEM; // no free space left	
+sys.c:	new_task->PID = PID;
+sys.c:	new_task->state = ST_READY;
+sys.c:	new_task->ticks = 0;
+sys.c:	int index  = (getEbp() - (int) current())/sizeof(int);
+sys.c:	((union task_union*)new_task)->stack[index] =(int) ret_from_fork;
+sys.c:	((union task_union*)new_task)->stack[index-1] = 0;
+sys.c:	new_task->kernel_esp= &((union task_union*)new_task)->stack[index-1];
+sys.c:	if(buffer == NULL) return -EFAULT;
+sys.c:	if(size < 0) return -EINVAL;
+sys.c:	while (i < size-CHUNK_SIZE){
+sys_call_table.S:	MAX_SYSCALL = (. - sys_call_table)/4
+system.c: * system.c -
+system.c: *   DS, ES, FS, GS <- DS
+system.c: *   SS:ESP <- DS:DATA_SEGMENT_SIZE
+system.c: * cld -> gcc2 wants DF (Direction Flag (eFlags.df))
+system.c:      esp = esp - 5*sizeof(DWord); /* To avoid overwriting task 1 */
+system.lds: *  system.lds - Linker Script for ZeOS system image.
+user.lds: *  ZeOS - jcosta septembre 2006
+user.lds: *  user.lds - Linker Script to create user memory image
+utils.c:    size -= 4;
+utils.c:    size --;
+utils.c:/* Copia de espacio de usuario a espacio de kernel, devuelve 0 si ok y -1 si error*/
+utils.c:    size -= 4;
+utils.c:    size --;
+utils.c:/* Copia de espacio de kernel a espacio de usuario, devuelve 0 si ok y -1 si error*/
+utils.c:    size -= 4;
+utils.c:    size --;
+utils.c: * - modifies the 64-bit dividend _in_place_
+utils.c: * - returns the 32-bit remainder
+wrappers.S:/**   0(%esp) - %ebx    \                        **/
+wrappers.S:/**   4(%esp) - %ecx     |                       **/
+wrappers.S:/**   8(%esp) - %edx     |                       **/
+wrappers.S:/**   C(%esp) - %esi     | Register saved        **/
+wrappers.S:/**  10(%esp) - %edi     |  by 'save'            **/
+wrappers.S:/**  14(%esp) - %ebp     |                       **/
+wrappers.S:/**  18(%esp) - %eax     |                       **/
+wrappers.S:/**  1C(%esp) - %ds      |                       **/
+wrappers.S:/**  20(%esp) - %es      |                       **/
+wrappers.S:/**  24(%esp) - %fs      |                       **/
+wrappers.S:/**  28(%esp) - %gs     /                        **/
+wrappers.S:/**  2C(%esp) - %eip    \                        **/
+wrappers.S:/**  30(%esp) - %cs      |                       **/
+wrappers.S:/**  34(%esp) - %eflags  |  Return context saved **/
+wrappers.S:/**  38(%esp) - %oldesp  |   by the processor.   **/
+wrappers.S:/**  3C(%esp) - %oldss  /                        **/
+wrappers.S:	movl $-1, %eax

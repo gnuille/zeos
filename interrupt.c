@@ -121,10 +121,10 @@ void keyboard_routine()
 }
 
 void clock_routine(){
+  zeos_show_clock();
   zeos_ticks++;
   update_sched_data_rr();
   if(needs_sched_rr()){
 	sched_next_rr();
   }
-  zeos_show_clock();
 }

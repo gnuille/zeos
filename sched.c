@@ -5,7 +5,8 @@
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
-
+#include <stats.h>
+#include <utils.h>
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
  * to protect against out of bound accesses.
@@ -73,20 +74,21 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-	struct list_head *ff = freequeue.next;
+	struct list_head *ff = list_first(&freequeue);
 	list_del(ff);
 	struct task_struct *idle_ts = list_head_to_task_struct(ff);
 	idle_ts -> PID = 0;
-	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-1] = (unsigned long) cpu_idle;
-	((unsigned long *) idle_ts)[KERNEL_STACK_SIZE-2] = (unsigned long) 0;
-	idle_ts -> kernel_esp = (unsigned long *) &(((unsigned long *)idle_ts)[KERNEL_STACK_SIZE-2]);
+	union task_union *tmp = (union task_union *) idle_ts;
+	tmp->stack[KERNEL_STACK_SIZE-1] = (unsigned long) cpu_idle;
+	tmp->stack[KERNEL_STACK_SIZE-2] = (unsigned long) 0;
+	idle_ts -> kernel_esp = &tmp->stack[KERNEL_STACK_SIZE-2];
 	allocate_DIR(idle_ts);   
 	idle_task = idle_ts;
- }
+}
 
 void init_task1(void)
 {
-	struct list_head *ff = freequeue.next;
+	struct list_head *ff = list_first(&freequeue);
 	list_del(ff);
 	
 	struct task_struct *task1_ts = list_head_to_task_struct(ff);
@@ -157,26 +159,36 @@ int needs_sched_rr(void){
 }
 
 void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue){
-	if( dst_queue == &freequeue ) {
-		if( t->state != ST_RUN ) list_del(&t->list);
-		list_add_tail(&t->list, dst_queue);	
-	}else if( dst_queue == &readyqueue ) {
-		if( t->state != ST_RUN ) list_del(&t->list);
-		list_add_tail(&t->list, dst_queue);
-		quantum_left = t->quantum;
-		t->state = ST_READY;
-	}else if( dst_queue == NULL ){
-		if( t->state != ST_RUN ) list_del(&t->list);
+	if( t->state != ST_RUN ) list_del(&t->list);
+	if( dst_queue == NULL ){
 		t->state = ST_RUN;
-	}else{ /* error */}
-} 
-
+	}else
+	{
+		list_add_tail(&t->list, dst_queue);	
+		if( dst_queue == &readyqueue ) {
+			t->state = ST_READY;
+		}
+	} 
+}
 void sched_next_rr(void){
-	struct list_head* next = readyqueue.next;
-	struct task_struct* nt = list_head_to_task_struct(next);
-	update_process_state_rr(current(), &readyqueue);
-	update_process_state_rr(nt, NULL);
-	task_switch((union task_union * ) nt);
+	if (!list_empty(&readyqueue)){
+		struct list_head* next = list_first(&readyqueue);
+		struct task_struct* nextt = list_head_to_task_struct(next);
+
+		struct stats st;
+	        st = current()->stats;
+		st.system_ticks += get_ticks() - st.elapsed_total_ticks;
+		st.elapsed_total_ticks = get_ticks();
+		update_process_state_rr(current(), &readyqueue);
+
+		st = nextt->stats;
+		st.ready_ticks += get_ticks() - st.elapsed_total_ticks;
+		st.elapsed_total_ticks = get_ticks();
+		update_process_state_rr(nextt, NULL);
+
+		quantum_left = nextt->quantum;
+		task_switch((union task_union * ) nextt);
+	}
 }
 
 int get_quantum( struct task_struct *t ){
