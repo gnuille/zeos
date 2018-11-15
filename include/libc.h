@@ -23,6 +23,8 @@ void exit();
 
 int gettime();
 
+int get_stats(int pid, struct stats * st);
+
 static const char EBADF_msg[] = "fd is not a valid file descriptor or is not open for writing.";
 static const char EAGAIN_msg[] = "Try again";
 

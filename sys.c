@@ -141,6 +141,21 @@ int sys_write(int fd, char* buffer, int size){
 	writen += sys_write_console(dest, size%CHUNK_SIZE); 
 	return writen;
 }
+
 int sys_gettime(){
 	return zeos_ticks;
 }
+
+int sys_get_stats(int pid, struct stats *st){
+	struct task_struct *act;
+	int i;
+	for (act = &(task[i=0].task); i < NR_TASKS; act = &(task[++i].task)){
+		if (act -> PID == pid){
+			//*st = (act -> stats);
+			copy_to_user(&(act->stats), st, sizeof(struct stats));	
+			return 0;
+		}
+	}	
+	return -EINVAL;
+}
+

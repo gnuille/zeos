@@ -116,6 +116,19 @@ ENTRY(fork)
 	pop %ebp
 	ret
 
+ENTRY(get_stats)
+	push %ebp
+	movl %esp, %ebp
+	push %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx
+	SYSCALL(35)
+	CHECK_ERROR(get_stats.no_error)
+	get_stats.no_error:
+	pop %ebx
+	pop %ebp
+	ret
+
 ENTRY(exit)
 	push %ebp
 	movl %esp, %ebp

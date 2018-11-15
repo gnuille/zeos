@@ -198,3 +198,17 @@ int get_quantum( struct task_struct *t ){
 void set_quantum( struct task_struct *t, int new_quantum ){
 	t->quantum = new_quantum;
 }
+
+void update_entry_system(){
+	struct stats st;
+	st = current()->stats;
+	st.user_ticks += get_ticks() - st.elapsed_total_ticks;
+	st.elapsed_total_ticks = get_ticks();
+}
+
+void update_leave_system(){
+	struct stats st;
+	st = current()->stats;
+	st.system_ticks += get_ticks() - st.elapsed_total_ticks;
+	st.elapsed_total_ticks = get_ticks();
+}
