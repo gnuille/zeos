@@ -14,7 +14,7 @@
 union task_union protected_tasks[NR_TASKS+2]
 __attribute__((__section__(".data.task")));
 
-int MAX_PID = 42;
+int MAX_PID = 1;
 int quantum_left;
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
@@ -168,6 +168,9 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 		if( dst_queue == &readyqueue ) {
 			t->state = ST_READY;
 		}
+		else{
+			t->state = ST_READY;
+		}
 	} 
 }
 void sched_next_rr(void){
@@ -175,15 +178,15 @@ void sched_next_rr(void){
 		struct list_head* next = list_first(&readyqueue);
 		struct task_struct* nextt = list_head_to_task_struct(next);
 
-		struct stats st;
-	        st = current()->stats;
-		st.system_ticks += get_ticks() - st.elapsed_total_ticks;
-		st.elapsed_total_ticks = get_ticks();
+		struct stats *st;
+	        st = &current()->stats;
+		st->system_ticks += get_ticks() - st->elapsed_total_ticks;
+		st->elapsed_total_ticks = get_ticks();
 		update_process_state_rr(current(), &readyqueue);
 
-		st = nextt->stats;
-		st.ready_ticks += get_ticks() - st.elapsed_total_ticks;
-		st.elapsed_total_ticks = get_ticks();
+		st = &nextt->stats;
+		st->ready_ticks += get_ticks() - st->elapsed_total_ticks;
+		st->elapsed_total_ticks = get_ticks();
 		update_process_state_rr(nextt, NULL);
 
 		quantum_left = nextt->quantum;
@@ -200,15 +203,15 @@ void set_quantum( struct task_struct *t, int new_quantum ){
 }
 
 void update_entry_system(){
-	struct stats st;
-	st = current()->stats;
-	st.user_ticks += get_ticks() - st.elapsed_total_ticks;
-	st.elapsed_total_ticks = get_ticks();
+	struct stats *st;
+	st = &current()->stats;
+	st->user_ticks += get_ticks() - st->elapsed_total_ticks;
+	st->elapsed_total_ticks = get_ticks();
 }
 
 void update_leave_system(){
-	struct stats st;
-	st = current()->stats;
-	st.system_ticks += get_ticks() - st.elapsed_total_ticks;
-	st.elapsed_total_ticks = get_ticks();
+	struct stats *st;
+	st = &current()->stats;
+	st->system_ticks += get_ticks() - st->elapsed_total_ticks;
+	st->elapsed_total_ticks = get_ticks();
 }

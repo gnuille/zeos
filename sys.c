@@ -149,6 +149,7 @@ int sys_gettime(){
 int sys_get_stats(int pid, struct stats *st){
 	struct task_struct *act;
 	int i;
+	if(!access_ok(VERIFY_WRITE, st, sizeof(struct stats))) return -EFAULT;
 	for (act = &(task[i=0].task); i < NR_TASKS; act = &(task[++i].task)){
 		if (act -> PID == pid){
 			//*st = (act -> stats);
