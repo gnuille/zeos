@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git config --global user.name  "Joan Vinyals i Guillem Ramirez" ;
+git config --global user.email "joan.vinyals@est.fib.upc.edu"   ;
