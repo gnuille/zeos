@@ -116,6 +116,17 @@ ENTRY(fork)
 	pop %ebp
 	ret
 
+ENTRY(clone)
+	push %ebp
+	movl %esp,% ebp
+	push %ebx
+	SYSCALL(19)
+	CHECK_ERROR(clone.no_error)
+	clone.no_error:
+	pop %ebx
+	pop %ebp
+	ret
+
 ENTRY(get_stats)
 	push %ebp
 	movl %esp, %ebp

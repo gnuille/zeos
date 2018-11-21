@@ -20,6 +20,8 @@
 int zeos_ticks;
 
 extern struct list_head freequeue, readyqueue;
+extern int dir_pages_refs[NR_TASKS];
+extern int quantum_left;
 
 unsigned long getEbp();
 extern int MAX_PID;
@@ -91,7 +93,7 @@ int sys_fork()
 	PID = MAX_PID++;
 	new_task->PID = PID;
 	new_task->state = ST_READY;
-	new_task->ticks = 0;
+	for (unsigned long * p = (unsigned long *) &(new_task->stats); p != (unsigned long *)(&new_task->stats + sizeof(struct stats)); *(p++) = 0);
 	int index  = (getEbp() - (int) current())/sizeof(int);
 	((union task_union*)new_task)->stack[index] =(int) ret_from_fork;
 	((union task_union*)new_task)->stack[index-1] = 0;
@@ -105,7 +107,7 @@ int sys_fork()
 void sys_exit()
 {	
 	struct task_struct * a = current();
-	
+	a->PID = -1;	
 	page_table_entry * pt = get_PT(a);
 	int page;
 	for(page = 0; page< NUM_PAG_DATA; page++){
@@ -150,13 +152,50 @@ int sys_get_stats(int pid, struct stats *st){
 	struct task_struct *act;
 	int i;
 	if(!access_ok(VERIFY_WRITE, st, sizeof(struct stats))) return -EFAULT;
+	if (pid < 0) return -EINVAL;
 	for (act = &(task[i=0].task); i < NR_TASKS; act = &(task[++i].task)){
 		if (act -> PID == pid){
 			//*st = (act -> stats);
+			act->stats.remaining_ticks = quantum_left;
 			copy_to_user(&(act->stats), st, sizeof(struct stats));	
 			return 0;
 		}
 	}	
-	return -EINVAL;
+	return -ESRCH;
 }
 
+int sys_clone(void (* function)(void), void *stack){
+
+	int PID=-1;
+
+	// creates the child process
+	if (list_empty(&freequeue)) return -EAGAIN; // NO PROCESS LEFT
+	struct list_head *new_task_ptr = list_first(&freequeue);
+	list_del(new_task_ptr);
+
+	struct task_struct *new_task = list_head_to_task_struct(new_task_ptr);
+
+	// Copy data from parent to child
+	copy_data(current(), new_task,(int) sizeof(union task_union));
+
+	int pos = ((int) current() - (int)task) / sizeof(union task_union);
+
+	dir_pages_refs[pos]++; 
+
+	PID = MAX_PID++;
+	new_task->PID = PID;
+	new_task->state = ST_READY;
+	for (unsigned long * p = (unsigned long *) &(new_task->stats); 
+			p != (unsigned long *)((&new_task->stats) + 1); *(p++) = 0);
+
+	int index  = (getEbp() - (int) current())/sizeof(int);
+	((union task_union*)new_task)->stack[index] =(int) function; // TODO: Arreglar-ho
+	((union task_union*)new_task)->stack[index-1] = 0;
+	new_task->kernel_esp= &((union task_union*)new_task)->stack[index-1];
+	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-2]=stack;
+
+	list_add_tail(new_task_ptr, &readyqueue); 	
+
+	return PID;
+	
+}

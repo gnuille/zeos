@@ -30,6 +30,7 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 }
 #endif
 
+extern int dir_pages_refs[NR_TASKS];
 extern struct list_head blocked;
 
 void writeMsr(int msr, int data);
@@ -58,6 +59,8 @@ int allocate_DIR(struct task_struct *t)
 	pos = ((int)t-(int)task)/sizeof(union task_union);
 
 	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+
+	dir_pages_refs[pos]++;	
 
 	return 1;
 }
@@ -100,7 +103,6 @@ void init_task1(void)
 	tss.esp0 = (unsigned long) KERNEL_ESP((union task_union *) task1_ts);
 	task1_ts -> kernel_esp = (unsigned long *) KERNEL_ESP((union task_union *) task1_ts);
 	writeMsr(0x175, KERNEL_ESP((union task_union *) task1_ts)); 
-	task1_ts -> ticks = 0;
 	task1_ts -> quantum = 12;
 	quantum_left = 12;
 	task1_ts -> state = ST_RUN;
@@ -149,7 +151,6 @@ void inner_task_switch(union task_union*t){
 }         
 
 void update_sched_data_rr(void){
-	current()->ticks++;
 	quantum_left--;
 }
 
@@ -184,12 +185,14 @@ void sched_next_rr(void){
 		st->elapsed_total_ticks = get_ticks();
 		update_process_state_rr(current(), &readyqueue);
 
+		quantum_left = nextt->quantum;
+
 		st = &nextt->stats;
 		st->ready_ticks += get_ticks() - st->elapsed_total_ticks;
 		st->elapsed_total_ticks = get_ticks();
+		st->total_trans += 1;
 		update_process_state_rr(nextt, NULL);
 
-		quantum_left = nextt->quantum;
 		task_switch((union task_union * ) nextt);
 	}
 }

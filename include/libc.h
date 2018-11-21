@@ -19,12 +19,15 @@ int getpid();
 
 int fork();
 
+int clone(void (* function)(void), void *stack);
+
 void exit();
 
 int gettime();
 
 int get_stats(int pid, struct stats * st);
 
+static const char ESRCH_msg[] = "No such process.";
 static const char EBADF_msg[] = "fd is not a valid file descriptor or is not open for writing.";
 static const char EAGAIN_msg[] = "Try again";
 
