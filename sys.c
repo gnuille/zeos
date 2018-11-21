@@ -108,11 +108,16 @@ void sys_exit()
 {	
 	struct task_struct * a = current();
 	a->PID = -1;	
-	page_table_entry * pt = get_PT(a);
-	int page;
-	for(page = 0; page< NUM_PAG_DATA; page++){
-		free_frame(pt[PAG_LOG_INIT_DATA+page].bits.pbase_addr);
-		del_ss_pag(pt, PAG_LOG_INIT_DATA+page);
+
+	int pos = ((int) current() - (int)task) / sizeof(union task_union);
+
+	if(!(--dir_pages_refs[pos])) {
+		page_table_entry * pt = get_PT(a);
+		int page;
+		for(page = 0; page< NUM_PAG_DATA; page++){
+			free_frame(pt[PAG_LOG_INIT_DATA+page].bits.pbase_addr);
+			del_ss_pag(pt, PAG_LOG_INIT_DATA+page);
+		}
 	}
 	update_process_state_rr(a,&freequeue);
 	if(!list_empty(&readyqueue)){
@@ -189,13 +194,39 @@ int sys_clone(void (* function)(void), void *stack){
 			p != (unsigned long *)((&new_task->stats) + 1); *(p++) = 0);
 
 	int index  = (getEbp() - (int) current())/sizeof(int);
-	((union task_union*)new_task)->stack[index] =(int) function; // TODO: Arreglar-ho
-	((union task_union*)new_task)->stack[index-1] = 0;
-	new_task->kernel_esp= &((union task_union*)new_task)->stack[index-1];
-	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE-2]=stack;
-
+	new_task->kernel_esp= &((union task_union*)new_task)->stack[index];
+	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE - 2]=(int)stack;
+	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE - 5]=(int)function;
 	list_add_tail(new_task_ptr, &readyqueue); 	
 
 	return PID;
 	
 }
+
+int sem_init(int n_sem, unsigned int value){
+	//invalid n_sem
+	if(n_sem < 0 || n_sem >20) return -1;
+	struct sem *s = &semaphores[n_sem];
+	//sem used
+	if(s->owner > 0 ) return -1;
+	//gather sem
+	s->owner = current()->PID;
+	s->value = value;
+	INIT_LIST_HEAD(s->queue);	
+	return 0;
+}
+
+int sem_wait(int n_sem){
+	//invalid n_sem
+	if(n_sem < 0 || n_sem >20) return -1;
+	struct sem *s = &semaphores[n_sem]
+	if( s->value <= 0 ){
+		//block the process
+	}else{
+		s->value--
+	}
+	return 0;
+}
+
+
+

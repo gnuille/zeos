@@ -4,8 +4,8 @@ char buff[42];
 int pid;
 
 int fact(){
-	int a;
-	for (int i = 0; i < 10; ++i) write(1, "Hola", 5);
+int i = 2000;
+while(i--)	write(1,"HOla bon dia, soc molt feliz\n", strlen("HOla bon dia, soc molt feliz\n"));
 	exit();
 }
 
@@ -15,11 +15,13 @@ main(void)
 	/* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
 	/* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
 
-	char stack[200];
+	char stack[2000];
 	write(1, "\nArreglar al clone. Buscar TODO a sys.c", strlen("\nArreglar al clone. Buscar TODO a sys.c"));
-	clone(fact, stack);
+	clone(fact, &stack[1999]);
+	int i;
+	for(i = 0; i < 1500; i++) write(1,"CONVISC AMB EL MEU THREAD FILL\n", strlen("CONVISC AMB EL MEU THREAD FILL\n"));
 
 //	runjp();
 	for (;;);
-	return 0;
+ 	return 0;
 }

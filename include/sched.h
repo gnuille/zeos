@@ -29,6 +29,11 @@ union task_union {
 	unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
 };
 
+struct sem {
+	int owner;
+	int value;
+	list_head * queue;
+};
 
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */

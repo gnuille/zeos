@@ -120,6 +120,8 @@ ENTRY(clone)
 	push %ebp
 	movl %esp,% ebp
 	push %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx
 	SYSCALL(19)
 	CHECK_ERROR(clone.no_error)
 	clone.no_error:
@@ -139,6 +141,56 @@ ENTRY(get_stats)
 	pop %ebx
 	pop %ebp
 	ret
+
+ENTRY(sem_init)
+	push %ebp
+	movl %esp, %ebp
+	push %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx 
+	SYSCALL(21)
+	CHECK_ERROR(sem_init.no_error)
+	sem_init.no_error:
+	pop %ebx
+	pop %ebp
+	pop 
+
+ENTRY(sem_wait)
+	push %ebp
+	movl %esp, %ebp
+	push %ebx
+	movl 8(%ebp), %ebx
+	SYSCALL(22)
+	CHECK_ERROR(sem_wait.no_error)
+	sem_wait.no_error:
+	pop %ebx
+	pop %ebp
+	pop 
+
+
+ENTRY(sem_signal)
+	push %ebp
+	movl %esp, %ebp
+	push %ebx
+	movl 8(%ebp), %ebx
+	SYSCALL(23)
+	CHECK_ERROR(sem_signal.no_error)
+	sem_signal.no_error:
+	pop %ebx
+	pop %ebp
+	pop 
+
+ENTRY(sem_destroy)
+	push %ebp
+	movl %esp, %ebp
+	push %ebx
+	movl 8(%ebp), %ebx
+	SYSCALL(24)
+	CHECK_ERROR(sem_destroy.no_error)
+	sem_destroy.no_error:
+	pop %ebx
+	pop %ebp
+	pop 
 
 ENTRY(exit)
 	push %ebp

@@ -18,7 +18,7 @@ int MAX_PID = 1;
 int quantum_left;
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
-
+struct sem semaphores[20];
 struct list_head freequeue, readyqueue;
 
 struct task_struct * idle_task;
