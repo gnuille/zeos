@@ -47,11 +47,13 @@ int strlen(char *a)
 
 void perror(void){
 	switch (errno) {
+		case 1:  write(1, EPERM_msg, sizeof(EPERM_msg)); break;
 		case 3:  write(1, ESRCH_msg, sizeof(ESRCH_msg)); break;
 		case 9:  write(1, EBADF_msg, sizeof(EBADF_msg)); break;
 		case 11: write(1, EAGAIN_msg, sizeof(EAGAIN_msg)); break;
 		case 12: write(1, ENOMEM_msg, sizeof(ENOMEM_msg)); break;
 		case 14: write(1, EFAULT_msg, sizeof(EFAULT_msg)); break;
+		case 16: write(1, EBUSY_msg,  sizeof(EBUSY_msg));  break;
 		case 22: write(1, EINVAL_msg, sizeof(EINVAL_msg)); break;
 	}
 }

@@ -11,5 +11,5 @@ int access_ok(int type, const void *addr, unsigned long size);
 #define min(a,b)	(a<b?a:b)
 
 unsigned long get_ticks(void);
-
+void memset(void *addr, int c, int size);
 #endif

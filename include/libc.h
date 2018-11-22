@@ -35,6 +35,7 @@ int gettime();
 
 int get_stats(int pid, struct stats * st);
 
+static const char EPERM_msg[] = "Operation not permited";
 static const char ESRCH_msg[] = "No such process.";
 static const char EBADF_msg[] = "fd is not a valid file descriptor or is not open for writing.";
 static const char EAGAIN_msg[] = "Try again";
@@ -42,6 +43,7 @@ static const char EAGAIN_msg[] = "Try again";
 static const char ENOMEM_msg[] = "Out of memory, cannot allocate structures.";
 
 static const char EFAULT_msg[] = "buf is outside your accessible address space.";
+static const char EBUSY_msg[]  = "Device or resource is bussy.";
 static const char EINVAL_msg[] = "size contains an invalid value.";
 
 void perror(void);

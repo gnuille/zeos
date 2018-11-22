@@ -95,8 +95,11 @@ int sys_fork()
 	PID = MAX_PID++;
 	new_task->PID = PID;
 	new_task->state = ST_READY;
+	memset(&(new_task->stats), 0, sizeof(struct stats));
+/*
 	for (unsigned long * p = (unsigned long *) &(new_task->stats);
 		       	p != (unsigned long *)(&new_task->stats + sizeof(struct stats)); *(p++) = 0);
+*/
 	int index  = (getEbp() - (int) current())/sizeof(int);
 	((union task_union*)new_task)->stack[index] =(int) ret_from_fork;
 	((union task_union*)new_task)->stack[index-1] = 0;
@@ -110,8 +113,15 @@ int sys_fork()
 void sys_exit()
 {	
 	struct task_struct * a = current();
-	a->PID = -1;	
+	
+	int i;	
+	for ( i = 0; i<NR_SEM; i++ ){
+		if(semaphores[i].owner == a->PID){
+			sys_sem_destroy(i);
+		}
+	}
 
+	a->PID = -1;	
 	int pos = ((int) a->dir_pages_baseAddr - (int) dir_pages) /(sizeof(page_table_entry)*1024);
 
 	if(!(--dir_pages_refs[pos])) {
@@ -195,10 +205,12 @@ int sys_clone(void (* function)(void), void *stack){
 	PID = MAX_PID++;
 	new_task->PID = PID;
 	new_task->state = ST_READY;
+	memset(&(new_task->stats), 0, sizeof(struct stats));
+/*
 	for (unsigned long * p = (unsigned long *) &(new_task->stats); 
 			p != (unsigned long *)((&new_task->stats) + 1); *(p++) = 0);
 
-	int index  = (getEbp() - (int) current())/sizeof(int);
+*/	int index  = (getEbp() - (int) current())/sizeof(int);
 	new_task->kernel_esp= &((union task_union*)new_task)->stack[index];
 	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE - 2]=(int)stack;
 	((union task_union*)new_task)->stack[KERNEL_STACK_SIZE - 5]=(int)function;
@@ -210,10 +222,10 @@ int sys_clone(void (* function)(void), void *stack){
 
 int sys_sem_init(int n_sem, unsigned int value){
 	//invalid n_sem
-	if(n_sem < 0 || n_sem >=20) return -1;
+	if(n_sem < 0 || n_sem >=20) return -EINVAL;
 	struct sem *s = &semaphores[n_sem];
 	//sem used
-	if(s->owner > 0 ) return -1;
+	if(s->owner > 0 ) return -EBUSY;
 	//gather sem
 	s->owner = current()->PID;
 	s->value = value;
@@ -223,9 +235,9 @@ int sys_sem_init(int n_sem, unsigned int value){
 
 int sys_sem_wait(int n_sem){
 	//invalid n_sem
-	if(n_sem < 0 || n_sem >=20) return -1;
+	if(n_sem < 0 || n_sem >=20) return -EINVAL;
 	struct sem *s = &semaphores[n_sem];
-	if(s->owner <= 0) return -1;
+	if(s->owner <= 0) return -EINVAL;
 	current()->sem_wait_ret = 0;
 	//#pragma omp critical
 	if( s->value <= 0 ){
@@ -240,10 +252,10 @@ int sys_sem_wait(int n_sem){
 }
 
 int sys_sem_signal(int n_sem){
-	if(n_sem < 0 || n_sem >=20) return -1;
+	if(n_sem < 0 || n_sem >=20) return -EINVAL;
 	struct sem *s = &semaphores[n_sem];
 	//uninitzializated
-	if( s->owner <= 0 ) return -1;
+	if( s->owner <= 0 ) return -EINVAL;
 	//#pragma omp critical
 	if( list_empty(&s->queue) ){
 		s->value++;
@@ -254,17 +266,17 @@ int sys_sem_signal(int n_sem){
 }
 
 int sys_sem_destroy(int n_sem){
-	if ( n_sem < 0 || n_sem >= 20) return -1;
+	if ( n_sem < 0 || n_sem >= 20) return -EINVAL;
 	struct sem *s = &semaphores[n_sem];
 	//uninitzializated
-	if ( s->owner <= 0 ) return -1;
-	if ( current()->PID != s->owner) return -1;
+	if ( s->owner <= 0 ) return -EINVAL;
+	if ( current()->PID != s->owner) return -EPERM;
 	
 	while(!list_empty(&s->queue)){
 		struct task_struct *act = list_head_to_task_struct(list_first(&s->queue));
 		act->sem_wait_ret = -1;
 		update_process_state_rr(act, &readyqueue);
 	}
-				
+	s->owner = 0;				
 	return 1;
 }
