@@ -153,7 +153,7 @@ ENTRY(sem_init)
 	sem_init.no_error:
 	pop %ebx
 	pop %ebp
-	pop 
+	ret
 
 ENTRY(sem_wait)
 	push %ebp
@@ -165,7 +165,7 @@ ENTRY(sem_wait)
 	sem_wait.no_error:
 	pop %ebx
 	pop %ebp
-	pop 
+	ret 
 
 
 ENTRY(sem_signal)
@@ -178,7 +178,7 @@ ENTRY(sem_signal)
 	sem_signal.no_error:
 	pop %ebx
 	pop %ebp
-	pop 
+	ret 
 
 ENTRY(sem_destroy)
 	push %ebp
@@ -190,7 +190,7 @@ ENTRY(sem_destroy)
 	sem_destroy.no_error:
 	pop %ebx
 	pop %ebp
-	pop 
+	ret 
 
 ENTRY(exit)
 	push %ebp

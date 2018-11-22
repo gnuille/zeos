@@ -21,6 +21,7 @@ struct task_struct {
 	int quantum;
 	enum state_t state;
 	struct stats stats; 
+	int sem_wait_ret;
 	unsigned long * kernel_esp;
 };
 
@@ -32,7 +33,7 @@ union task_union {
 struct sem {
 	int owner;
 	int value;
-	list_head * queue;
+	struct list_head queue;
 };
 
 extern union task_union protected_tasks[NR_TASKS+2];
@@ -77,4 +78,5 @@ void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
+void enqueue_current(struct list_head *lt);
 #endif  /* __SCHED_H__ */

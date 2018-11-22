@@ -54,15 +54,15 @@ page_table_entry * get_PT (struct task_struct *t)
 
 int allocate_DIR(struct task_struct *t) 
 {
-	int pos;
-
-	pos = ((int)t-(int)task)/sizeof(union task_union);
-
-	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
-
-	dir_pages_refs[pos]++;	
-
-	return 1;
+	int i;
+	for(i = 0; i<NR_TASKS; i++){
+		if (!dir_pages_refs[i]){
+			t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[i];
+			dir_pages_refs[i]++;	
+			return 1;
+		}
+	}
+	return -1;
 }
 
 void cpu_idle(void)
@@ -159,6 +159,14 @@ int needs_sched_rr(void){
         //return current()->quantum && !(current()->ticks % current()->quantum) && !list_empty(&readyqueue);
 }
 
+void enqueue_current(struct list_head *next_queue){
+	struct stats *st;
+	st = &current()->stats;
+	st->system_ticks += get_ticks() - st->elapsed_total_ticks;
+	st->elapsed_total_ticks = get_ticks();
+	update_process_state_rr(current(), next_queue);
+}
+
 void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue){
 	if( t->state != ST_RUN ) list_del(&t->list);
 	if( dst_queue == NULL ){
@@ -170,7 +178,7 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 			t->state = ST_READY;
 		}
 		else{
-			t->state = ST_READY;
+			t->state = ST_BLOCKED;
 		}
 	} 
 }
@@ -178,15 +186,10 @@ void sched_next_rr(void){
 	if (!list_empty(&readyqueue)){
 		struct list_head* next = list_first(&readyqueue);
 		struct task_struct* nextt = list_head_to_task_struct(next);
-
-		struct stats *st;
-	        st = &current()->stats;
-		st->system_ticks += get_ticks() - st->elapsed_total_ticks;
-		st->elapsed_total_ticks = get_ticks();
-		update_process_state_rr(current(), &readyqueue);
-
+		
 		quantum_left = nextt->quantum;
 
+		struct stats *st;
 		st = &nextt->stats;
 		st->ready_ticks += get_ticks() - st->elapsed_total_ticks;
 		st->elapsed_total_ticks = get_ticks();

@@ -23,6 +23,8 @@ extern struct list_head freequeue, readyqueue;
 extern int dir_pages_refs[NR_TASKS];
 extern int quantum_left;
 
+extern struct sem semaphores[20];
+
 unsigned long getEbp();
 extern int MAX_PID;
 
@@ -61,7 +63,7 @@ int sys_fork()
 	// Copy data from parent to child
 	copy_data(current(), new_task,(int) sizeof(union task_union));
 
-	allocate_DIR(new_task);
+	if(allocate_DIR(new_task) < 0) return -ENOMEM;
 	page_table_entry * n_pt = get_PT(new_task);
 	page_table_entry * c_pt = get_PT(current());
 
@@ -93,7 +95,8 @@ int sys_fork()
 	PID = MAX_PID++;
 	new_task->PID = PID;
 	new_task->state = ST_READY;
-	for (unsigned long * p = (unsigned long *) &(new_task->stats); p != (unsigned long *)(&new_task->stats + sizeof(struct stats)); *(p++) = 0);
+	for (unsigned long * p = (unsigned long *) &(new_task->stats);
+		       	p != (unsigned long *)(&new_task->stats + sizeof(struct stats)); *(p++) = 0);
 	int index  = (getEbp() - (int) current())/sizeof(int);
 	((union task_union*)new_task)->stack[index] =(int) ret_from_fork;
 	((union task_union*)new_task)->stack[index-1] = 0;
@@ -109,7 +112,7 @@ void sys_exit()
 	struct task_struct * a = current();
 	a->PID = -1;	
 
-	int pos = ((int) current() - (int)task) / sizeof(union task_union);
+	int pos = ((int) a->dir_pages_baseAddr - (int) dir_pages) /(sizeof(page_table_entry)*1024);
 
 	if(!(--dir_pages_refs[pos])) {
 		page_table_entry * pt = get_PT(a);
@@ -173,6 +176,9 @@ int sys_clone(void (* function)(void), void *stack){
 
 	int PID=-1;
 
+	if (!access_ok(VERIFY_WRITE, stack, sizeof(void*)))   return -EFAULT;
+	if (!access_ok(VERIFY_READ, function, sizeof(void*))) return -EFAULT;
+
 	// creates the child process
 	if (list_empty(&freequeue)) return -EAGAIN; // NO PROCESS LEFT
 	struct list_head *new_task_ptr = list_first(&freequeue);
@@ -183,8 +189,7 @@ int sys_clone(void (* function)(void), void *stack){
 	// Copy data from parent to child
 	copy_data(current(), new_task,(int) sizeof(union task_union));
 
-	int pos = ((int) current() - (int)task) / sizeof(union task_union);
-
+	int pos = ((int) new_task->dir_pages_baseAddr - (int) dir_pages) /(sizeof(page_table_entry)*1024);
 	dir_pages_refs[pos]++; 
 
 	PID = MAX_PID++;
@@ -203,30 +208,63 @@ int sys_clone(void (* function)(void), void *stack){
 	
 }
 
-int sem_init(int n_sem, unsigned int value){
+int sys_sem_init(int n_sem, unsigned int value){
 	//invalid n_sem
-	if(n_sem < 0 || n_sem >20) return -1;
+	if(n_sem < 0 || n_sem >=20) return -1;
 	struct sem *s = &semaphores[n_sem];
 	//sem used
 	if(s->owner > 0 ) return -1;
 	//gather sem
 	s->owner = current()->PID;
 	s->value = value;
-	INIT_LIST_HEAD(s->queue);	
+	INIT_LIST_HEAD(&s->queue);	
 	return 0;
 }
 
-int sem_wait(int n_sem){
+int sys_sem_wait(int n_sem){
 	//invalid n_sem
-	if(n_sem < 0 || n_sem >20) return -1;
-	struct sem *s = &semaphores[n_sem]
+	if(n_sem < 0 || n_sem >=20) return -1;
+	struct sem *s = &semaphores[n_sem];
+	if(s->owner <= 0) return -1;
+	current()->sem_wait_ret = 0;
+	//#pragma omp critical
 	if( s->value <= 0 ){
 		//block the process
+		enqueue_current(&s->queue);
+		sched_next_rr();	
+		return current()->sem_wait_ret; 
 	}else{
-		s->value--
+		s->value--;
 	}
 	return 0;
 }
 
+int sys_sem_signal(int n_sem){
+	if(n_sem < 0 || n_sem >=20) return -1;
+	struct sem *s = &semaphores[n_sem];
+	//uninitzializated
+	if( s->owner <= 0 ) return -1;
+	//#pragma omp critical
+	if( list_empty(&s->queue) ){
+		s->value++;
+	}else{
+		update_process_state_rr(list_head_to_task_struct(list_first(&s->queue)), &readyqueue);
+	}
+	return 1;
+}
 
-
+int sys_sem_destroy(int n_sem){
+	if ( n_sem < 0 || n_sem >= 20) return -1;
+	struct sem *s = &semaphores[n_sem];
+	//uninitzializated
+	if ( s->owner <= 0 ) return -1;
+	if ( current()->PID != s->owner) return -1;
+	
+	while(!list_empty(&s->queue)){
+		struct task_struct *act = list_head_to_task_struct(list_first(&s->queue));
+		act->sem_wait_ret = -1;
+		update_process_state_rr(act, &readyqueue);
+	}
+				
+	return 1;
+}

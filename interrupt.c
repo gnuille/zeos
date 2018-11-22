@@ -11,6 +11,7 @@
     
 extern int zeos_ticks;
 extern union task_union *task; /* Vector de tasques */
+extern struct list_head readyqueue;
 
 Gate idt[IDT_ENTRIES];
 Register    idtR;
@@ -125,6 +126,7 @@ void clock_routine(){
   zeos_ticks++;
   update_sched_data_rr();
   if(needs_sched_rr()){
+	enqueue_current(&readyqueue);
 	sched_next_rr();
-  }
+ }
 }
