@@ -8,6 +8,7 @@
 #include <io.h>
 #include <zeos_interrupt.h>
 #include <sched.h>
+#include <cbuffer.h>
     
 extern int zeos_ticks;
 extern union task_union *task; /* Vector de tasques */
@@ -75,6 +76,8 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].flags           = flags;
   idt[vector].highOffset      = highWord((DWord)handler);
 }
+
+struct cbuffer read_buffer;
 
 void keyboard_handler();
 void clock_handler();

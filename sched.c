@@ -21,6 +21,8 @@ union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TAS
 struct sem semaphores[NR_SEM];
 struct list_head freequeue, readyqueue;
 
+struct list_head readqueue;
+
 struct task_struct * idle_task;
 
 #if 1
@@ -32,6 +34,8 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 
 extern int dir_pages_refs[NR_TASKS];
 extern struct list_head blocked;
+
+extern struct cbuffer read_buffer;
 
 void writeMsr(int msr, int data);
 
@@ -113,6 +117,10 @@ void init_sched(){
 	memset(semaphores, 0, sizeof(struct sem)*NR_SEM);
 }
 
+void init_read_buffer() {
+	init_cbuffer (&read_buffer);
+}
+
 struct task_struct* current()
 {
 	int ret_value;
@@ -141,8 +149,9 @@ void inner_task_switch(union task_union*t){
 	tss.esp0 =  KERNEL_ESP(t);
  //(unsigned long) t -> task.kernel_esp;
 	writeMsr(0x175, (int) KERNEL_ESP(t));
-
-	set_cr3(t -> task.dir_pages_baseAddr);
+	
+	if(current() -> dir_pages_baseAddr == t-> task.dir_pages_baseAddr)
+		set_cr3(t -> task.dir_pages_baseAddr);
 
 	current() -> kernel_esp = (unsigned long *) getEbp(); 
 

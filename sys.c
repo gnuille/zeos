@@ -94,6 +94,7 @@ int sys_fork()
 	set_cr3(get_DIR(current()));
 	PID = MAX_PID++;
 	new_task->PID = PID;
+	new_task->read_size = 0;
 	new_task->state = ST_READY;
 	memset(&(new_task->stats), 0, sizeof(struct stats));
 /*
@@ -204,6 +205,7 @@ int sys_clone(void (* function)(void), void *stack){
 
 	PID = MAX_PID++;
 	new_task->PID = PID;
+	new_task->read_size = 0;
 	new_task->state = ST_READY;
 	memset(&(new_task->stats), 0, sizeof(struct stats));
 /*
