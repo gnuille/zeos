@@ -23,7 +23,6 @@ struct task_struct {
 	enum state_t state;
 	struct stats stats; 
 	int sem_wait_ret;
-	int read_size;
 	unsigned long * kernel_esp;
 };
 

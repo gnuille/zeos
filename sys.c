@@ -99,7 +99,6 @@ int sys_fork()
     set_cr3(get_DIR(current()));
     PID = MAX_PID++;
     new_task->PID = PID;
-    new_task->read_size = 0;
     new_task->state = ST_READY;
     memset(&(new_task->stats), 0, sizeof(struct stats));
     /*
@@ -139,13 +138,7 @@ void sys_exit()
         }
     }
     update_process_state_rr(a,&freequeue);
-    if(!list_empty(&readyqueue)){
-        struct task_struct * ts = list_head_to_task_struct(list_first(&readyqueue));
-        update_process_state_rr(ts, NULL);
-        task_switch((union task_union*)ts);
-    }else{
-        task_switch((union task_union*) &idle_task);
-    }	
+    sched_next_rr();
 }
 
 #define CHUNK_SIZE 64
@@ -185,7 +178,8 @@ int sys_read_keyboard(char *buffer, int size) {
             dest += CHUNK_SIZE;
         }
     }
-    copy_to_user(src, dest, size%CHUNK_SIZE);
+    if (size%CHUNK_SIZE)
+	    copy_to_user(src, dest, size%CHUNK_SIZE);
     return size;
 }
 
@@ -240,7 +234,6 @@ int sys_clone(void (* function)(void), void *stack){
 
     PID = MAX_PID++;
     new_task->PID = PID;
-    new_task->read_size = 0;
     new_task->state = ST_READY;
     memset(&(new_task->stats), 0, sizeof(struct stats));
     /*

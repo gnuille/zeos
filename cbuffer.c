@@ -6,7 +6,7 @@ void init_cbuffer(struct cbuffer *b) {
 }
 
 int cbuffer_push(struct cbuffer *b, char value) {
-	if (b -> tail == b -> head) {
+	if (b -> count == CBUFFER_SIZE) {
 		return 0;
 	}
 
@@ -39,5 +39,6 @@ char cbuffer_pop(struct cbuffer *b) {
 		if (b -> head == &(b -> buffer[CBUFFER_SIZE]))
 			b -> head = b -> buffer;
 	}
-	return *(b -> head);
+	return value;
 }
+
