@@ -12,7 +12,7 @@
     
 extern int zeos_ticks;
 extern union task_union *task; /* Vector de tasques */
-extern struct list_head readyqueue;
+extern struct list_head readyqueue, readqueue;
 
 Gate idt[IDT_ENTRIES];
 Register    idtR;
@@ -109,19 +109,19 @@ void keyboard_routine()
   if (!(llegit & 0x80))
   {
     if((llegit & 0x7F) < sizeof(char_map)/sizeof(char) && char_map[llegit & 0x7F] != '\0'){
-      printc_xy(0,0,char_map[llegit & 0x7F]);
-      if (char_map[llegit & 0x7F]=='1'){
-	task_switch(&task[1]);
-      }else if (char_map[llegit & 0x7F] == '0'){
-	task_switch(&task[0]);
-      } else if (char_map[llegit & 0x7F]=='2'){
-	task_switch(&task[2]);
-      }
-    }else{
-      printc_xy(0,0,'C');
+	printc_xy(0, 0,char_map[llegit & 0x7F]);
+        if (!cbuffer_full(&read_buffer)){
+            cbuffer_push(&read_buffer, char_map[llegit & 0x7F]);
+
+            if(!list_empty(&readqueue)){
+		struct list_head* first = list_first(&readqueue);
+		struct task_struct* firstt = list_head_to_task_struct(first);
+
+                update_process_state_rr(firstt, &readyqueue);
+            }
+        }
     }
   }
-
 }
 
 void clock_routine(){
@@ -129,7 +129,8 @@ void clock_routine(){
   zeos_ticks++;
   update_sched_data_rr();
   if(needs_sched_rr()){
-	enqueue_current(&readyqueue);
+	if(current()->PID)
+		enqueue_current(&readyqueue);
 	sched_next_rr();
  }
 }

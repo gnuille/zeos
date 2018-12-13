@@ -75,7 +75,6 @@ void cpu_idle(void)
 
 	while(1)
 	{
-		printk("0");
 	}
 }
 
@@ -145,6 +144,10 @@ void init_ready_queue(){
 	INIT_LIST_HEAD(&readyqueue);
 }
 
+void init_read_queue(){
+	INIT_LIST_HEAD(&readqueue);
+}
+
 void inner_task_switch(union task_union*t){
 	tss.esp0 =  KERNEL_ESP(t);
  //(unsigned long) t -> task.kernel_esp;
@@ -165,7 +168,7 @@ void update_sched_data_rr(void){
 }
 
 int needs_sched_rr(void){
-	return quantum_left <= 0 && !list_empty(&readyqueue); 
+	return (quantum_left <= 0 || !current()->PID) &&  (!list_empty(&readyqueue) ); 
         //return current()->quantum && !(current()->ticks % current()->quantum) && !list_empty(&readyqueue);
 }
 
@@ -192,6 +195,7 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 		}
 	} 
 }
+
 void sched_next_rr(void){
 	if (!list_empty(&readyqueue)){
 		struct list_head* next = list_first(&readyqueue);
@@ -207,7 +211,10 @@ void sched_next_rr(void){
 		update_process_state_rr(nextt, NULL);
 
 		task_switch((union task_union * ) nextt);
+	}else{
+		task_switch((union task_union * ) idle_task);
 	}
+
 }
 
 int get_quantum( struct task_struct *t ){

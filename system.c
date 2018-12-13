@@ -99,6 +99,8 @@ int __attribute__((__section__(".text.main")))
   /* Initialize the ready process queue */
   init_ready_queue();
 
+  init_read_queue();
+
   /* Initialize idle task  data */
   init_idle();
 
@@ -111,6 +113,7 @@ int __attribute__((__section__(".text.main")))
   zeos_ticks = 0;
   printk("Entering user mode...");
 
+  zeos_init_auxjp();
   enable_int();
   /*
    * We return from a 'theorical' call to a 'call gate' to reduce our privileges

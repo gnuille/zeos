@@ -1,4 +1,6 @@
 #!/bin/bash
 
+mv $(HOME)/.vimrc $(HOME)/.vimrc.old
+cp .vimrc $(HOME)/.vimrc 
 git config --global user.name  "Joan Vinyals i Guillem Ramirez" ;
 git config --global user.email "joan.vinyals@est.fib.upc.edu"   ;

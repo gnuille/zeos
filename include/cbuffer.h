@@ -16,12 +16,12 @@ struct cbuffer{
  */
 void init_cbuffer(struct cbuffer *b);
 
-int cqueue_push(struct cbuffer *b, char value);
+int cbuffer_push(struct cbuffer *b, char value);
 
-int cqueue_empty(struct cbuffer *b);
+int cbuffer_empty(struct cbuffer *b);
 
-int cqueue_full(struct cbuffer *b);
+int cbuffer_full(struct cbuffer *b);
 
-char cqueue_front(struct cbuffer *b);
+char cbuffer_front(struct cbuffer *b);
 
-char cqueue_pop(struct cbuffer *b);
+char cbuffer_pop(struct cbuffer *b);

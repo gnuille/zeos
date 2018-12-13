@@ -5,7 +5,7 @@ void init_cbuffer(struct cbuffer *b) {
 	b -> head = b -> tail = b -> buffer;
 }
 
-int cqueue_push(struct cbuffer *b, char value) {
+int cbuffer_push(struct cbuffer *b, char value) {
 	if (b -> tail == b -> head) {
 		return 0;
 	}
@@ -19,19 +19,19 @@ int cqueue_push(struct cbuffer *b, char value) {
 	return 1;
 }
 
-int cqueue_empty(struct cbuffer *b) {
+int cbuffer_empty(struct cbuffer *b) {
 	return b -> count == 0;
 }
 
-int cqueue_full(struct cbuffer *b) {
+int cbuffer_full(struct cbuffer *b) {
 	return b -> count == CBUFFER_SIZE;
 }
 
-char cqueue_front(struct cbuffer *b) {
+char cbuffer_front(struct cbuffer *b) {
 	return *(b -> head);
 }
 
-char cqueue_pop(struct cbuffer *b) {
+char cbuffer_pop(struct cbuffer *b) {
 	char value = *(b -> head);
 	if (b -> head != b -> tail) {
 		b -> count--;

@@ -91,6 +91,20 @@ ENTRY(write)
 	pop %ebp
 	ret
 
+ENTRY(read)
+        push %ebp
+        movl %esp, %ebp
+        push %ebx
+        movl 8(%ebp), %ebx
+        movl 12(%ebp), %ecx
+        movl 16(%ebp), %edx
+        SYSCALL(3);
+        CHECK_ERROR(read.no_error);
+        read.no_error:
+        pop %ebx
+        pop %ebp
+        ret
+
 ENTRY(gettime)
 	push %ebp
 	movl %esp, %ebp

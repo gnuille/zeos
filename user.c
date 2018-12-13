@@ -24,6 +24,7 @@ main(void)
 	int i;
 	for(i = 0; i < 1500; i++) write(1,"CONVISC AMB EL MEU THREAD FILL\n", strlen("CONVISC AMB EL MEU THREAD FILL\n"));
 #endif
+	runjp();
 	for (;;);
  	return 0;
 }
