@@ -14,6 +14,8 @@ extern int zeos_ticks;
 extern union task_union *task; /* Vector de tasques */
 extern struct list_head readyqueue, readqueue;
 
+extern int read_size;
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 char char_map[] =
@@ -112,13 +114,18 @@ void keyboard_routine()
 	printc_xy(0, 0,char_map[llegit & 0x7F]);
         if (!cbuffer_full(&read_buffer)){
             cbuffer_push(&read_buffer, char_map[llegit & 0x7F]);
-
-            if(!list_empty(&readqueue)){
+                
+            if(( cbuffer_full(&read_buffer) || read_size == cbuffer_size(&read_buffer) ) && !list_empty(&readqueue)){
 		struct list_head* first = list_first(&readqueue);
 		struct task_struct* firstt = list_head_to_task_struct(first);
 
                 update_process_state_rr(firstt, &readyqueue);
             }
+        }else if (!list_empty(&readqueue)) {
+            struct list_head* first = list_first(&readqueue);
+            struct task_struct* firstt = list_head_to_task_struct(first);
+
+            update_process_state_rr(firstt, &readyqueue);
         }
     }
   }

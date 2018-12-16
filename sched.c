@@ -180,6 +180,14 @@ void enqueue_current(struct list_head *next_queue){
 	update_process_state_rr(current(), next_queue);
 }
 
+void enqueue_current_first(struct list_head *next_queue){
+	struct stats *st;
+	st = &current()->stats;
+	st->system_ticks += get_ticks() - st->elapsed_total_ticks;
+	st->elapsed_total_ticks = get_ticks();
+	update_priority_process_state_rr(current(), next_queue);
+}
+
 void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue){
 	if( t->state != ST_RUN ) list_del(&t->list);
 	if( dst_queue == NULL ){
@@ -187,6 +195,22 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 	}else
 	{
 		list_add_tail(&t->list, dst_queue);	
+		if( dst_queue == &readyqueue ) {
+			t->state = ST_READY;
+		}
+		else{
+			t->state = ST_BLOCKED;
+		}
+	} 
+}
+
+void update_priority_process_state_rr(struct task_struct *t, struct list_head *dst_queue){
+	if( t->state != ST_RUN ) list_del(&t->list);
+	if( dst_queue == NULL ){
+		t->state = ST_RUN;
+	}else
+	{
+		list_add(&t->list, dst_queue);	
 		if( dst_queue == &readyqueue ) {
 			t->state = ST_READY;
 		}

@@ -21,6 +21,8 @@
 #define ESCRIPTURA 1
 int zeos_ticks;
 
+int read_size = 0;
+
 extern struct list_head freequeue, readyqueue, readqueue;
 extern int dir_pages_refs[NR_TASKS];
 extern int quantum_left;
@@ -161,34 +163,37 @@ int sys_write(int fd, char* buffer, int size){
     return writen;
 }
 
-int sys_read_keyboard(char *buffer, int size) {
+#define max(a, b) a > b ? a : b
+
+int sys_read_keyboard(char *buffer) {
     char src[CHUNK_SIZE];
     char *dest = buffer;
-    int i = 0;
-    while( i < size ){
-        if(cbuffer_empty(&read_buffer)){
-            enqueue_current(&readqueue);
+    int read, total_read = 0;
+    while( read_size > 0 ){
+        if( cbuffer_size( &read_buffer ) < max( CHUNK_SIZE, read_size ) ) ){
+            enqueue_current_first(&readqueue);
             sched_next_rr();
             continue;
         }
-        src[i%CHUNK_SIZE]=cbuffer_pop(&read_buffer);
-        i++;
-        if(!i%CHUNK_SIZE) {
-            copy_to_user(src, dest, CHUNK_SIZE);
-            dest += CHUNK_SIZE;
-        }
+        read=cbuffer_read(&read_buffer, src, max(CHUNK_SIZE, read_size));
+        read_size-=read;
+        copy_to_user(src, dest, read);
+        dest += read;
+        total_read += read;
     }
-    if (size%CHUNK_SIZE)
-	    copy_to_user(src, dest, size%CHUNK_SIZE);
-    return size;
+    return total_read;
 }
 
 int sys_read(int fd, char* buffer, int size){
     int err;
-    if((err=check_fd(fd, LECTURA)) < 0) return err;
-    if(buffer == NULL) return -EFAULT;
-    if(size < 0) return -EINVAL;
-
+    if ( ( err=check_fd( fd, LECTURA ) ) < 0 ) return err;
+    if ( buffer == NULL ) return -EFAULT;
+    if ( size < 0 ) return -EINVAL;
+    if ( cbuffer_full(&read_buffer) || !list_empty(&readqueue) ){
+        enqueue_current(&readqueue);
+        sched_next_rr();
+    }
+    read_size = size;
     return sys_read_keyboard(buffer, size);
 }
 
